@@ -178,9 +178,8 @@ fun LoginScreen(
                                         isLoading = false
                                         Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
                                         
-                                        // Navigate to HomeScreen after successful login
-                                        navController.navigate("home") {
-                                            // Pop the login screen off the back stack
+                                        // Nếu đăng nhập thành công, điều hướng đến màn hình chính
+                                        navController.navigate("main") {
                                             popUpTo("login") { inclusive = true }
                                         }
                                     }

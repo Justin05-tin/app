@@ -19,14 +19,12 @@ import androidx.navigation.compose.rememberNavController
 import com.example.nammoadidaphat.presentation.ui.auth.ForgotPasswordScreen
 import com.example.nammoadidaphat.presentation.ui.auth.LoginScreen
 import com.example.nammoadidaphat.presentation.ui.auth.RegisterScreen
-import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.OnboardingScreen
 import com.example.nammoadidaphat.presentation.viewmodel.AuthState
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.OnboardingViewModel
 import com.example.nammoadidaphat.ui.theme.PetPackLoginTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collect
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -69,7 +67,7 @@ class MainActivity : ComponentActivity() {
                     
                     // Determine start destination based on authentication state and onboarding status first
                     val startDestination = when {
-                        authState is AuthState.Authenticated -> "home"
+                        authState is AuthState.Authenticated -> "main"
                         hasSeenOnboarding -> "login"
                         else -> "onboarding"
                     }
@@ -90,8 +88,8 @@ class MainActivity : ComponentActivity() {
                         composable("register") {
                             RegisterScreen(navController = navController)
                         }
-                        composable("home") {
-                            HomeScreen(navController = navController, authViewModel = authViewModel)
+                        composable("main") {
+                            BottomNavRoot(authViewModel = authViewModel, mainNavController = navController)
                         }
                         composable("forgot_password") {
                             ForgotPasswordScreen(navController = navController)

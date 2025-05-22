@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavController
 import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
@@ -19,10 +20,12 @@ import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomNavRoot() {
+fun BottomNavRoot(
+    authViewModel: AuthViewModel,
+    mainNavController: NavController
+) {
     val navController = rememberNavController()
     val items = BottomNavScreen.items
-    val authViewModel: AuthViewModel = hiltViewModel()
     
     Scaffold(
         bottomBar = {
@@ -54,7 +57,7 @@ fun BottomNavRoot() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(BottomNavScreen.Overview.route) { 
-                HomeScreen(navController, authViewModel) 
+                HomeScreen(navController = mainNavController, authViewModel = authViewModel) 
             }
             composable(BottomNavScreen.Workout.route) { 
                 WorkoutScreen() 
