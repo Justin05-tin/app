@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.google.gms.google.services) apply false
-    // Chú ý: Bạn cần thêm cả classpath cho google-services
 }
 
 buildscript {
@@ -15,9 +14,7 @@ buildscript {
 
 
     dependencies {
-        // Đảm bảo rằng bạn đã thêm đúng classpath cho Firebase plugin
         classpath("com.google.gms:google-services:4.3.15")
-    // Phiên bản mới nhất của google-services plugin
     }
     configurations.all {
         resolutionStrategy.eachDependency {
@@ -29,4 +26,3 @@ buildscript {
     }
 }
 
-// Tăng cường các phụ thuộc và cài đặt cho các thư viện khác nếu cần.

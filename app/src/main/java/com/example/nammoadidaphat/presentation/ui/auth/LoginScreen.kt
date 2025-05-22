@@ -3,56 +3,44 @@ package com.example.nammoadidaphat.presentation.ui.auth
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.nammoadidaphat.R
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    viewModel: AuthViewModel = hiltViewModel()
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -100,11 +88,28 @@ fun LoginScreen(navController: NavController) {
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Image(
-                    painter = painterResource(id = R.drawable.gym),
-                    contentDescription = "Gym Icon",
-                    modifier = Modifier.size(228.dp)
-                )
+                
+                Box(
+                    modifier = Modifier
+                        .size(228.dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color(0xFF2196F3),
+                                    Color(0xFF1976D2)
+                                )
+                            ),
+                            shape = RoundedCornerShape(50)
+                        )
+                ) {
+                    Text(
+                        text = "GYM",
+                        color = Color.White,
+                        fontSize = 48.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         }
 
@@ -118,7 +123,9 @@ fun LoginScreen(navController: NavController) {
             leadingIcon = {
                 Icon(Icons.Default.Email, contentDescription = "Email")
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -132,47 +139,71 @@ fun LoginScreen(navController: NavController) {
                 Icon(Icons.Default.Lock, contentDescription = "Password")
             },
             visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Show error message if any
+        if (errorMessage.isNotEmpty()) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         // Login Button
         Button(
             onClick = {
                 if (email.isNotBlank() && password.isNotBlank()) {
-                    loginWithEmailPassword(
-                        context = context,
-                        email = email,
-                        password = password,
-                        onSuccess = {
-                            Toast.makeText(context, "Login success!", Toast.LENGTH_SHORT).show()
-
-                            // Navigate to HomeScreen after successful login
-                            navController.navigate("home") {
-                                // Pop the login screen off the back stack to prevent going back to login
-                                popUpTo("login") { inclusive = true }
+                    isLoading = true
+                    errorMessage = ""
+                    
+                    scope.launch {
+                        viewModel.signIn(email, password)
+                            .onSuccess {
+                                isLoading = false
+                                Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+                                
+                                // Navigate to HomeScreen after successful login
+                                navController.navigate("home") {
+                                    // Pop the login screen off the back stack to prevent going back to login
+                                    popUpTo("login") { inclusive = true }
+                                }
                             }
-                        },
-                        onFailure = { error ->
-                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                            .onFailure { exception ->
+                                isLoading = false
+                                errorMessage = exception.message ?: "Login failed"
+                            }
+                    }
                 } else {
-                    Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
+                    errorMessage = "Please enter email and password"
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(50.dp)
+                .padding(horizontal = 16.dp),
             shape = MaterialTheme.shapes.medium,
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
+            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black),
+            enabled = !isLoading
         ) {
-            Text("LOGIN", color = Color.White)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("LOGIN", color = Color.White)
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
 
         TextButton(onClick = {
             navController.navigate("forgot_password")
@@ -184,8 +215,6 @@ fun LoginScreen(navController: NavController) {
             )
         }
 
-
-
         Spacer(modifier = Modifier.height(16.dp))
         Text("OR", fontWeight = FontWeight.SemiBold)
 
@@ -195,12 +224,22 @@ fun LoginScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.facebook),
-                contentDescription = "Facebook Login",
-                modifier = Modifier.size(36.dp)
-            )
-
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        Color(0xFF1877F2),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+            ) {
+                Text(
+                    text = "f",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -259,48 +298,4 @@ fun LoginScreen(navController: NavController) {
             }
         }
     }
-}
-
-fun loginWithEmailPassword(
-    context: Context,
-    email: String,
-    password: String,
-    onSuccess: () -> Unit,
-    onFailure: (String) -> Unit
-) {
-    val auth = Firebase.auth
-
-    // Kiểm tra email và mật khẩu có trống không
-    if (email.isBlank() || password.isBlank()) {
-        onFailure("Email và mật khẩu không được để trống.")
-        return
-    }
-
-    // Thực hiện đăng nhập bằng email và mật khẩu
-    auth.signInWithEmailAndPassword(email, password)
-        .addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Đăng nhập thành công
-                onSuccess()
-            } else {
-                // Xử lý lỗi khi đăng nhập thất bại
-                val exceptionMessage = task.exception?.message ?: "Đăng nhập thất bại do lỗi không xác định"
-
-                // Kiểm tra các lỗi chi tiết từ Firebase
-                when {
-                    exceptionMessage.contains("The email address is badly formatted") -> {
-                        onFailure("Địa chỉ email không hợp lệ.")
-                    }
-                    exceptionMessage.contains("There is no user record corresponding to this identifier") -> {
-                        onFailure("Email không tồn tại.")
-                    }
-                    exceptionMessage.contains("The password is invalid") -> {
-                        onFailure("Mật khẩu không đúng.")
-                    }
-                    else -> {
-                        onFailure(exceptionMessage)
-                    }
-                }
-            }
-        }
 }

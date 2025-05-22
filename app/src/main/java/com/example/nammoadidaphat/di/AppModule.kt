@@ -1,13 +1,16 @@
 package com.example.nammoadidaphat.di
 
+import android.content.Context
 import com.example.nammoadidaphat.data.repository.AuthRepositoryImpl
+import com.example.nammoadidaphat.data.repository.UserPreferencesRepository
 import com.example.nammoadidaphat.domain.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -30,8 +33,16 @@ abstract class AppModule {
 
         @Provides
         @Singleton
-        fun provideFirebaseDatabase(): FirebaseDatabase {
-            return FirebaseDatabase.getInstance()
+        fun provideFirebaseFirestore(): FirebaseFirestore {
+            return FirebaseFirestore.getInstance()
+        }
+        
+        @Provides
+        @Singleton
+        fun provideUserPreferencesRepository(
+            @ApplicationContext context: Context
+        ): UserPreferencesRepository {
+            return UserPreferencesRepository(context)
         }
     }
 } 

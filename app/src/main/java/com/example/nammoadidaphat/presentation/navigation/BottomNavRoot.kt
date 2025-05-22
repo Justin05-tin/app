@@ -1,5 +1,6 @@
 package com.example.nammoadidaphat.presentation.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,6 +15,7 @@ import com.example.nammoadidaphat.presentation.ui.workout.WorkoutScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomNavRoot() {
     val navController = rememberNavController()
@@ -47,10 +49,18 @@ fun BottomNavRoot() {
             startDestination = BottomNavScreen.Overview.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavScreen.Overview.route) { HomeScreen() }
-            composable(BottomNavScreen.Workout.route) { WorkoutScreen() }
-            composable(BottomNavScreen.Report.route) { ReportScreen() }
-            composable(BottomNavScreen.Profile.route) { ProfileScreen() }
+            composable(BottomNavScreen.Overview.route) { 
+                HomeScreen(navController) 
+            }
+            composable(BottomNavScreen.Workout.route) { 
+                WorkoutScreen() 
+            }
+            composable(BottomNavScreen.Report.route) { 
+                ReportScreen() 
+            }
+            composable(BottomNavScreen.Profile.route) { 
+                ProfileScreen() 
+            }
         }
     }
 } 

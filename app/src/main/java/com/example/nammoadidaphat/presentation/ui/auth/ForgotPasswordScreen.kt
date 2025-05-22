@@ -2,17 +2,16 @@ package com.example.nammoadidaphat.presentation.ui.auth
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -29,18 +28,18 @@ fun ForgotPasswordScreen(navController: NavController) {
     var newPassword by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        Image(
-            painter = painterResource(id = R.drawable.backgr),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds // sửa lỗi & hiển thị toàn ảnh
-        )
-
-
-
-
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.Black,
+                        Color(0xFF424242)
+                    )
+                )
+            )
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -106,7 +105,11 @@ fun ForgotPasswordScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    checkSecurityKey(email, securityKey, context, navController)
+                    try {
+                        checkSecurityKey(email, securityKey, context, navController)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
@@ -123,6 +126,11 @@ fun checkSecurityKey(
     context: Context,
     navController: NavController
 ) {
+    if (email.isEmpty() || securityKey.isEmpty()) {
+        Toast.makeText(context, "Please enter email and security key", Toast.LENGTH_SHORT).show()
+        return
+    }
+
     val database = FirebaseDatabase.getInstance().reference
 
     database.child("users").orderByChild("email").equalTo(email).get()
@@ -157,8 +165,12 @@ fun resetPassword(
                 auth.sendPasswordResetEmail(email).addOnCompleteListener { resetTask ->
                     if (resetTask.isSuccessful) {
                         Toast.makeText(context, "Password reset email sent!", Toast.LENGTH_SHORT).show()
-                        navController.navigate("login") {
-                            popUpTo("forgot_password") { inclusive = true }
+                        try {
+                            navController.navigate("login") {
+                                popUpTo("forgot_password") { inclusive = true }
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Navigation error: ${e.message}", Toast.LENGTH_SHORT).show()
                         }
                     } else {
                         Toast.makeText(context, "Failed to send reset email: ${resetTask.exception?.message}", Toast.LENGTH_SHORT).show()
