@@ -15,9 +15,10 @@ credentials-play-services-auth = "1.5.0"
 googleid = "1.1.1"
 
 [plugins]
-android-application = { id = "com.android.application", version = "8.8.0" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version = "1.9.10" }
-google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "google-gms-google-services" }
+android-application = { id = "com.android.application", version = "8.9.2" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version = "1.9.22" }
+google-gms-google-services = { id = "com.google.gms.google-services", version = "4.4.0" }
+com-google-dagger-hilt-android = { id = "com.google.dagger.hilt.android", version = "2.48" }
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core" }

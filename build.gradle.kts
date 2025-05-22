@@ -19,6 +19,14 @@ buildscript {
         classpath("com.google.gms:google-services:4.3.15")
     // Phiên bản mới nhất của google-services plugin
     }
+    configurations.all {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "com.squareup" && requested.name == "javapoet") {
+                useVersion("1.13.0")
+                because("Fix Hilt/JavaPoet NoSuchMethodError in buildscript")
+            }
+        }
+    }
 }
 
 // Tăng cường các phụ thuộc và cài đặt cho các thư viện khác nếu cần.
