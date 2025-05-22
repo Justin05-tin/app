@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".ExsApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -18,8 +19,9 @@
 
         <!-- Main Activity -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".presentation.navigation.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Nammoadidaphat">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
