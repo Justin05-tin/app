@@ -122,26 +122,53 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
-        val user = auth.currentUser
-        if (user != null) {
-            val registration = usersCollection.document(user.uid).addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(null)
-                    return@addSnapshotListener
-                }
-                
-                if (snapshot != null && snapshot.exists()) {
-                    val userData = User.fromMap(snapshot.data ?: emptyMap())
-                    trySend(userData)
-                } else {
-                    trySend(null)
-                }
+        // Listen for auth state changes
+        val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            val firebaseUser = firebaseAuth.currentUser
+            if (firebaseUser == null) {
+                trySend(null)
+            } else {
+                // User is signed in, get their data from Firestore
+                usersCollection.document(firebaseUser.uid).get()
+                    .addOnSuccessListener { document ->
+                        if (document != null && document.exists()) {
+                            val userData = User.fromMap(document.data ?: emptyMap())
+                            trySend(userData)
+                        } else {
+                            // Create basic profile if Firestore data doesn't exist
+                            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                            val timestamp = dateFormat.format(Date())
+                            
+                            val userData = User(
+                                userId = firebaseUser.uid,
+                                email = firebaseUser.email ?: "",
+                                createdAt = timestamp,
+                                updatedAt = timestamp
+                            )
+                            
+                            // Don't block the flow - just create the user record in the background
+                            usersCollection.document(firebaseUser.uid).set(userData.toMap())
+                            
+                            trySend(userData)
+                        }
+                    }
+                    .addOnFailureListener {
+                        // Even if Firestore fails, we still know the user is authenticated
+                        val basicUser = User(
+                            userId = firebaseUser.uid,
+                            email = firebaseUser.email ?: ""
+                        )
+                        trySend(basicUser)
+                    }
             }
-            
-            awaitClose { registration.remove() }
-        } else {
-            trySend(null)
-            awaitClose { }
+        }
+        
+        // Register the auth state listener
+        auth.addAuthStateListener(authStateListener)
+        
+        // Clean up when the flow is closed
+        awaitClose { 
+            auth.removeAuthStateListener(authStateListener) 
         }
     }
 

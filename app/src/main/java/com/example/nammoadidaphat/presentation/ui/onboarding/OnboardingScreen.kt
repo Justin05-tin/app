@@ -32,6 +32,16 @@ fun OnboardingScreen(
 ) {
     val scope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
+    
+    // Nếu đã xem onboarding trước đó, chuyển đến màn hình login luôn
+    val hasSeenOnboarding by viewModel.hasSeenOnboarding.collectAsState()
+    LaunchedEffect(hasSeenOnboarding) {
+        if (hasSeenOnboarding) {
+            navController.navigate("login") {
+                popUpTo("onboarding") { inclusive = true }
+            }
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -91,7 +101,9 @@ fun OnboardingScreen(
                     if (!isNavigating) {
                         isNavigating = true
                         scope.launch {
+                            // Lưu trạng thái onboarding đã hoàn thành
                             viewModel.saveOnboardingCompleted()
+                            // Điều hướng đến màn hình đăng nhập
                             navController.navigate("login") {
                                 popUpTo("onboarding") { inclusive = true }
                             }

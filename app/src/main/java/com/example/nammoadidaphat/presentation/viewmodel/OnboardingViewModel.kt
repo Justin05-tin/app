@@ -16,21 +16,26 @@ class OnboardingViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    // Sử dụng MutableStateFlow để kiểm soát trạng thái của onboarding
-    private val _hasSeenOnboarding = MutableStateFlow(false)
-    val hasSeenOnboarding: StateFlow<Boolean> = _hasSeenOnboarding
+    // Sử dụng StateFlow từ repository trực tiếp để luôn có trạng thái mới nhất
+    val hasSeenOnboarding: StateFlow<Boolean> = userPreferencesRepository.hasSeenOnboarding
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            false
+        )
 
-    init {
-        // Lấy trạng thái onboarding từ repository
-        viewModelScope.launch {
-            userPreferencesRepository.hasSeenOnboarding.collect { hasSeenOnboarding ->
-                _hasSeenOnboarding.value = hasSeenOnboarding
-            }
-        }
-    }
-
+    /**
+     * Lưu trạng thái hoàn thành onboarding.
+     * Trạng thái này được lưu vào DataStore và sẽ tồn tại ngay cả khi ứng dụng đóng.
+     */
     suspend fun saveOnboardingCompleted() {
         userPreferencesRepository.saveOnboardingState(true)
-        _hasSeenOnboarding.value = true
+    }
+
+    /**
+     * Reset trạng thái onboarding (chỉ dùng cho mục đích debugging)
+     */
+    suspend fun resetOnboarding() {
+        userPreferencesRepository.resetOnboardingState()
     }
 } 
