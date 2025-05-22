@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1088775145799",
-    "project_id": "nammoadidaphat-47bc9",
-    "storage_bucket": "nammoadidaphat-47bc9.firebasestorage.app"
+    "project_number": "256959902340",
+    "project_id": "exc-home",
+    "storage_bucket": "exc-home.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1088775145799:android:fffc900e24ed3140766462",
+        "mobilesdk_app_id": "1:256959902340:android:7efc198248e48e736108d1",
         "android_client_info": {
           "package_name": "com.example.nammoadidaphat"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCA7-4QUN4PuRZjtPasVwC0j2to7BCQwVA"
+          "current_key": "AIzaSyAK8VoDMfTyTO8gFiRbveYneIt58AkdATw"
         }
       ],
       "services": {

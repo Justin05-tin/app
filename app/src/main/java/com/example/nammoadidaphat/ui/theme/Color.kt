@@ -2,6 +2,8 @@ package com.example.nammoadidaphat.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Teal200 = Color(0xFF03DAC5)
-val Teal500 = Color(0xFF00838F)
-val Teal700 = Color(0xFF006064)
+// App colors
+val AppYellow = Color(0xFFFFEB3B)
+val DarkBlue = Color(0xFF16202C)
+val LightBlue = Color(0xFF90CAF9)
+val MediumGray = Color(0xFF90A4AE)

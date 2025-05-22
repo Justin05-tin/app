@@ -1,13 +1,11 @@
 package com.example.nammoadidaphat.presentation.ui.auth
 
-import com.google.firebase.auth.FirebaseAuth
-
 import android.widget.Toast
-import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -16,275 +14,255 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.Arrangement
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.R
+import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    viewModel: AuthViewModel = hiltViewModel()
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 0.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier = Modifier.fillMaxSize()
     ) {
+        // Background Image with overlay
+        Image(
+            painter = painterResource(id = R.drawable.login_background),
+            contentDescription = "Workout background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
+        // Dark Overlay
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
+                .fillMaxSize()
+                .background(Color(0x66000000))  // Semi-transparent black overlay
+        )
+
+        // Content
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val waveHeight = size.height / 4
-                val waveWidth = size.width / 6
-
-                val path = Path().apply {
-                    moveTo(0f, 0f)
-                    lineTo(0f, size.height - waveHeight)
-                    cubicTo(
-                        waveWidth, size.height,
-                        size.width - waveWidth, size.height,
-                        size.width, size.height - waveHeight
-                    )
-                    lineTo(size.width, 0f)
-                    close()
-                }
-
-                drawPath(path = path, color = Color.Black)
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Spacer(modifier = Modifier.height(96.dp))
+            
+            // Title
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Already Have An\nAccount?",
+                    text = "BODY GOALS",
                     color = Color.White,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
-                Image(
-                    painter = painterResource(id = R.drawable.gym),
-                    contentDescription = "Gym Icon",
-                    modifier = Modifier.size(228.dp)
+                
+                Text(
+                    text = "WORKOUT",
+                    color = Color.White,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Email field
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            placeholder = { Text("Email") },
-            leadingIcon = {
-                Icon(Icons.Default.Email, contentDescription = "Email")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Password field
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            placeholder = { Text("Password") },
-            leadingIcon = {
-                Icon(Icons.Default.Lock, contentDescription = "Password")
-            },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Login Button
-        Button(
-            onClick = {
-                if (email.isNotBlank() && password.isNotBlank()) {
-                    loginWithEmailPassword(
-                        context = context,
-                        email = email,
-                        password = password,
-                        onSuccess = {
-                            Toast.makeText(context, "Login success!", Toast.LENGTH_SHORT).show()
-
-                            // Navigate to HomeScreen after successful login
-                            navController.navigate("home") {
-                                // Pop the login screen off the back stack to prevent going back to login
-                                popUpTo("login") { inclusive = true }
-                            }
-                        },
-                        onFailure = { error ->
-                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                } else {
-                    Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = MaterialTheme.shapes.medium,
-            colors = ButtonDefaults.buttonColors(backgroundColor = Color.Black)
-        ) {
-            Text("LOGIN", color = Color.White)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-
-        TextButton(onClick = {
-            navController.navigate("forgot_password")
-        }) {
-            Text(
-                text = "FORGOT PASSWORD?",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("OR", fontWeight = FontWeight.SemiBold)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.facebook),
-                contentDescription = "Facebook Login",
-                modifier = Modifier.size(36.dp)
-            )
-
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        ClickableText(
-            text = AnnotatedString("New User? Register Now"),
-            onClick = {
-                navController.navigate("register") // Navigate to register screen
-            },
-            style = TextStyle(
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp)
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
+            
+            // Login Form
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 32.dp)
             ) {
-                val waveHeight = size.height * 0.1f
-                val numberOfWaves = 1
-                val waveLength = size.width / numberOfWaves
+                // Email field
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    placeholder = { Text("Email", color = Color.White.copy(alpha = 0.6f)) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Email, contentDescription = "Email", tint = Color.White)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.7f),
+                        backgroundColor = Color.White.copy(alpha = 0.1f)
+                    )
+                )
 
-                val path = Path().apply {
-                    moveTo(0f, waveHeight)
+                // Password field
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    placeholder = { Text("Password", color = Color.White.copy(alpha = 0.6f)) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Lock, contentDescription = "Password", tint = Color.White)
+                    },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        textColor = Color.White,
+                        cursorColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.7f),
+                        backgroundColor = Color.White.copy(alpha = 0.1f)
+                    )
+                )
 
-                    for (i in 0 until numberOfWaves) {
-                        val startX = i * waveLength
-                        val endX = startX + waveLength
-                        val controlX1 = startX + waveLength / 4
-                        val controlY1 = 0f
-                        val controlX2 = startX + 3 * waveLength / 4
-                        val controlY2 = size.height
+                // Forgot Password link
+                TextButton(
+                    onClick = { navController.navigate("forgot_password") },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = "Forgot Password",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                }
 
-                        cubicTo(
-                            controlX1, controlY1,
-                            controlX2, controlY2,
-                            endX, waveHeight
+                // Error message
+                if (errorMessage.isNotEmpty()) {
+                    Text(
+                        text = errorMessage,
+                        color = Color.Red,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+                
+                // Sign In Button
+                Button(
+                    onClick = {
+                        if (email.isNotBlank() && password.isNotBlank()) {
+                            isLoading = true
+                            errorMessage = ""
+                            
+                            scope.launch {
+                                viewModel.signIn(email, password)
+                                    .onSuccess {
+                                        isLoading = false
+                                        Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+                                        
+                                        // Nếu đăng nhập thành công, điều hướng đến màn hình chính
+                                        navController.navigate("main") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
+                                    }
+                                    .onFailure { exception ->
+                                        isLoading = false
+                                        errorMessage = exception.message ?: "Login failed"
+                                    }
+                            }
+                        } else {
+                            errorMessage = "Please enter email and password"
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(top = 16.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFFFFEB3B) // Yellow color
+                    ),
+                    enabled = !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.Black,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "Sign In",
+                            color = Color.Black,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-
-                    lineTo(size.width, size.height)
-                    lineTo(0f, size.height)
-                    close()
                 }
-
-                drawPath(path = path, color = Color.Black)
+                
+                // Didn't have account text and signup link
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 24.dp)
+                ) {
+                    Text(
+                        "Didn't have any account? ",
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
+                    
+                    ClickableText(
+                        text = AnnotatedString("Sign Up here"),
+                        style = TextStyle(
+                            color = Color(0xFFFFEB3B),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ),
+                        onClick = {
+                            navController.navigate("register")
+                        }
+                    )
+                }
+            }
+            
+            // Page indicator dots at the bottom
+            Row(
+                modifier = Modifier.padding(top = 32.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.5f))
+                )
             }
         }
     }
-}
-
-fun loginWithEmailPassword(
-    context: Context,
-    email: String,
-    password: String,
-    onSuccess: () -> Unit,
-    onFailure: (String) -> Unit
-) {
-    val auth = Firebase.auth
-
-    // Kiểm tra email và mật khẩu có trống không
-    if (email.isBlank() || password.isBlank()) {
-        onFailure("Email và mật khẩu không được để trống.")
-        return
-    }
-
-    // Thực hiện đăng nhập bằng email và mật khẩu
-    auth.signInWithEmailAndPassword(email, password)
-        .addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Đăng nhập thành công
-                onSuccess()
-            } else {
-                // Xử lý lỗi khi đăng nhập thất bại
-                val exceptionMessage = task.exception?.message ?: "Đăng nhập thất bại do lỗi không xác định"
-
-                // Kiểm tra các lỗi chi tiết từ Firebase
-                when {
-                    exceptionMessage.contains("The email address is badly formatted") -> {
-                        onFailure("Địa chỉ email không hợp lệ.")
-                    }
-                    exceptionMessage.contains("There is no user record corresponding to this identifier") -> {
-                        onFailure("Email không tồn tại.")
-                    }
-                    exceptionMessage.contains("The password is invalid") -> {
-                        onFailure("Mật khẩu không đúng.")
-                    }
-                    else -> {
-                        onFailure(exceptionMessage)
-                    }
-                }
-            }
-        }
 }
