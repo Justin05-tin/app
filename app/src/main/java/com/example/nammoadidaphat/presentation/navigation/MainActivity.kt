@@ -20,6 +20,7 @@ import com.example.nammoadidaphat.presentation.ui.auth.ForgotPasswordScreen
 import com.example.nammoadidaphat.presentation.ui.auth.LoginScreen
 import com.example.nammoadidaphat.presentation.ui.auth.RegisterScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.OnboardingScreen
+import com.example.nammoadidaphat.presentation.ui.splash.SplashScreen
 import com.example.nammoadidaphat.presentation.viewmodel.AuthState
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.OnboardingViewModel
@@ -54,28 +55,27 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
                     val authViewModel: AuthViewModel = hiltViewModel()
-                    
-                    val hasSeenOnboarding by onboardingViewModel.hasSeenOnboarding.collectAsState()
-                    val authState by authViewModel.authState.collectAsState()
-                    
+
                     // Khi người dùng đã đăng nhập, đánh dấu đã xem onboarding
+                    val authState by authViewModel.authState.collectAsState()
                     LaunchedEffect(authState) {
                         if (authState is AuthState.Authenticated) {
                             onboardingViewModel.saveOnboardingCompleted()
                         }
                     }
                     
-                    // Determine start destination based on authentication state and onboarding status first
-                    val startDestination = when {
-                        authState is AuthState.Authenticated -> "main"
-                        hasSeenOnboarding -> "login"
-                        else -> "onboarding"
-                    }
-
+                    // Always start with splash screen which will handle all the navigation logic
                     NavHost(
                         navController = navController, 
-                        startDestination = startDestination
+                        startDestination = "splash"
                     ) {
+                        composable("splash") {
+                            SplashScreen(
+                                navController = navController,
+                                onboardingViewModel = onboardingViewModel,
+                                authViewModel = authViewModel
+                            )
+                        }
                         composable("onboarding") {
                             OnboardingScreen(
                                 navController = navController,
