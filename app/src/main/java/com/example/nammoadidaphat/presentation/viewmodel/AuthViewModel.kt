@@ -97,6 +97,26 @@ class AuthViewModel @Inject constructor(
         return result
     }
     
+    // For processing Google sign-in in MainActivity
+    fun handleGoogleSignInIntent(data: Intent?) {
+        viewModelScope.launch {
+            handleGoogleSignInResult(data)
+        }
+    }
+    
+    // Check if a user needs to be directed to onboarding
+    fun needsOnboarding(user: User?): Boolean {
+        if (user == null) return false
+        
+        // Check if essential onboarding fields are missing
+        return user.gender.isBlank() || 
+               user.age == null || 
+               user.height == null || 
+               user.weight == null || 
+               user.fitnessLevel.isBlank() ||
+               user.goals.isBlank()
+    }
+    
     fun getFacebookSignInIntent(): Intent {
         return authRepository.getFacebookSignInIntent()
     }

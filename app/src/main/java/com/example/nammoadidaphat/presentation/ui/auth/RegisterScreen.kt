@@ -6,8 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,7 +33,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.R
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
-import com.facebook.CallbackManager
 import kotlinx.coroutines.launch
 
 @Composable
@@ -46,7 +43,9 @@ fun RegisterScreen(
         navController.navigate("login") {
             popUpTo("register") { inclusive = true }
         }
-    }
+    },
+    onGoogleSignInClicked: () -> Unit = {},
+    onFacebookSignInClicked: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -56,65 +55,6 @@ fun RegisterScreen(
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
-    // Google Sign-In Launcher
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            isLoading = true
-            errorMessage = ""
-            
-            scope.launch {
-                viewModel.handleGoogleSignInResult(result.data)
-                    .onSuccess {
-                        isLoading = false
-                        Toast.makeText(context, "Google sign-in successful!", Toast.LENGTH_SHORT).show()
-                        onSuccessfulRegistration()
-                    }
-                    .onFailure { exception ->
-                        isLoading = false
-                        errorMessage = exception.message ?: "Google sign-in failed"
-                    }
-            }
-        }
-    }
-    
-    // Facebook Sign-In Handler
-    LaunchedEffect(Unit) {
-        // Register Facebook SDK in the Activity
-        // This is necessary for Facebook SDK to work
-        // In a real app, you would do this in your MainActivity
-    }
-    
-    fun handleFacebookSignIn() {
-        isLoading = true
-        errorMessage = ""
-        
-        viewModel.getFacebookSignInIntent() // This triggers Facebook login flow
-        
-        // Actual result handling will be done via Facebook SDK callbacks
-        // which will eventually call our ViewModel's handleFacebookSignInResult method
-        
-        scope.launch {
-            try {
-                // This is a simplified example - in a real app, 
-                // you need to properly handle the activity result
-                val result = viewModel.handleFacebookSignInResult(null)
-                result.onSuccess {
-                    isLoading = false
-                    Toast.makeText(context, "Facebook sign-in successful!", Toast.LENGTH_SHORT).show()
-                    onSuccessfulRegistration()
-                }.onFailure { exception ->
-                    isLoading = false
-                    errorMessage = exception.message ?: "Facebook sign-in failed"
-                }
-            } catch (e: Exception) {
-                isLoading = false
-                errorMessage = e.message ?: "Facebook sign-in failed"
-            }
-        }
-    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -143,7 +83,7 @@ fun RegisterScreen(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(96.dp))
+            Spacer(modifier = Modifier.height(64.dp))
             
             // Title
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -214,13 +154,13 @@ fun RegisterScreen(
                     )
                 )
                 
-                // Confirmation Password field
+                // Confirm Password field
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    placeholder = { Text("Confirmation password", color = Color.White.copy(alpha = 0.6f)) },
+                    placeholder = { Text("Confirm Password", color = Color.White.copy(alpha = 0.6f)) },
                     leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = "Confirmation Password", tint = Color.White)
+                        Icon(Icons.Default.Lock, contentDescription = "Confirm Password", tint = Color.White)
                     },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier
@@ -245,29 +185,24 @@ fun RegisterScreen(
                     )
                 }
                 
-                // Sign Up Button
+                // Register Button
                 Button(
                     onClick = {
                         if (email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
-                            errorMessage = "Please fill all fields"
-                        } else if (password != confirmPassword) {
-                            errorMessage = "Passwords don't match"
-                        } else {
-                            isLoading = true
-                            errorMessage = ""
-                            
-                            scope.launch {
-                                viewModel.signUp(
-                                    email = email,
-                                    password = password,
-                                    fullName = email.substringBefore("@"),
-                                    age = null,
-                                    gender = "",
-                                    height = null,
-                                    weight = null,
-                                    fitnessLevel = "",
-                                    goals = ""
-                                )
+                            errorMessage = "Please fill in all fields"
+                            return@Button
+                        }
+                        
+                        if (password != confirmPassword) {
+                            errorMessage = "Passwords do not match"
+                            return@Button
+                        }
+                        
+                        isLoading = true
+                        errorMessage = ""
+                        
+                        scope.launch {
+                            viewModel.signUp(email, password, "")
                                 .onSuccess {
                                     isLoading = false
                                     Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
@@ -277,7 +212,6 @@ fun RegisterScreen(
                                     isLoading = false
                                     errorMessage = exception.message ?: "Registration failed"
                                 }
-                            }
                         }
                     },
                     modifier = Modifier
@@ -298,7 +232,7 @@ fun RegisterScreen(
                         )
                     } else {
                         Text(
-                            text = "Sign Up",
+                            text = "Register",
                             color = Color.Black,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
@@ -306,100 +240,80 @@ fun RegisterScreen(
                     }
                 }
                 
-                // "Or" divider
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // Social Login Section
+                Column(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Divider(
-                        color = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.weight(1f)
-                    )
                     Text(
-                        text = "Or",
+                        text = "Or register with",
                         color = Color.White,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    Divider(
-                        color = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                
-                // Social login buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Facebook sign in button
-                    Button(
-                        onClick = { handleFacebookSignIn() },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF1877F2),
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        enabled = !isLoading
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_facebook),
-                                contentDescription = "Facebook",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = "Facebook",
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                     
-                    // Google sign in button
-                    Button(
-                        onClick = {
-                            googleSignInLauncher.launch(viewModel.getGoogleSignInIntent())
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp)
-                            .border(
-                                width = 1.dp,
-                                color = Color.LightGray,
-                                shape = RoundedCornerShape(8.dp)
-                            ),
-                        colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color.White,
-                            contentColor = Color.DarkGray
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        enabled = !isLoading
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        // Facebook button
+                        Button(
+                            onClick = { onFacebookSignInClicked() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFF1877F2), // Facebook blue
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !isLoading
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_google),
-                                contentDescription = "Google",
-                                tint = Color.Unspecified,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = "Google",
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_facebook),
+                                    contentDescription = "Facebook",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Facebook",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        
+                        // Google button
+                        Button(
+                            onClick = { onGoogleSignInClicked() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color.White,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !isLoading
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_google),
+                                    contentDescription = "Google",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Google",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -411,20 +325,22 @@ fun RegisterScreen(
                     modifier = Modifier.padding(top = 24.dp)
                 ) {
                     Text(
-                        "If you have an account? ",
+                        "Already have an account? ",
                         color = Color.White,
                         fontSize = 14.sp
                     )
                     
                     ClickableText(
-                        text = AnnotatedString("Sign In here"),
+                        text = AnnotatedString("Login here"),
                         style = TextStyle(
                             color = Color(0xFFFFEB3B),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         ),
                         onClick = {
-                            navController.navigate("login")
+                            navController.navigate("login") {
+                                popUpTo("register") { inclusive = true }
+                            }
                         }
                     )
                 }

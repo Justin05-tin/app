@@ -25,7 +25,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +38,8 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-import androidx.activity.ComponentActivity
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
 
 class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
@@ -176,8 +176,7 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
-        // Listen for auth state changes
-        val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             val firebaseUser = firebaseAuth.currentUser
             if (firebaseUser == null) {
                 trySend(null)
@@ -218,11 +217,11 @@ class AuthRepositoryImpl @Inject constructor(
         }
         
         // Register the auth state listener
-        auth.addAuthStateListener(authStateListener)
+        auth.addAuthStateListener(listener)
         
         // Clean up when the flow is closed
         awaitClose { 
-            auth.removeAuthStateListener(authStateListener) 
+            auth.removeAuthStateListener(listener) 
         }
     }
     
@@ -231,13 +230,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
     
     override suspend fun handleGoogleSignInResult(data: Intent?): Result<User> {
-        try {
-            if (data == null) {
-                return Result.failure(Exception("Sign-in intent data is null"))
-            }
-            
+        if (data == null) {
+            return Result.failure(Exception("Sign-in intent data is null"))
+        }
+        
+        return try {
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            val account = task.getResult(Exception::class.java)
+            val account = task.getResult(ApiException::class.java)
             
             if (account != null) {
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
@@ -252,13 +251,13 @@ class AuthRepositoryImpl @Inject constructor(
                     photoUrl = account.photoUrl?.toString() ?: ""
                 )
                 
-                return Result.success(userData)
+                Result.success(userData)
             } else {
-                return Result.failure(Exception("Google sign in failed"))
+                Result.failure(Exception("Google sign in failed"))
             }
         } catch (e: Exception) {
             Timber.e(e, "Google sign in error")
-            return Result.failure(e)
+            Result.failure(e)
         }
     }
     
@@ -410,5 +409,10 @@ class AuthRepositoryImpl @Inject constructor(
                     continuation.resumeWithException(it)
                 }
         }
+    }
+    
+    // Handle activity result from Facebook login
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        callbackManager.onActivityResult(requestCode, resultCode, data)
     }
 } 

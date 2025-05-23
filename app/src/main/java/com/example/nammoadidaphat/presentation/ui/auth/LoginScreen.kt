@@ -29,21 +29,50 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.R
+import com.example.nammoadidaphat.presentation.viewmodel.AuthState
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
+    onGoogleSignInClicked: () -> Unit = {},
+    onFacebookSignInClicked: () -> Unit = {}
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Observe the auth state from ViewModel
+    val authState by viewModel.authState.collectAsState()
+    val isLoading = authState is AuthState.Loading
+    
+    // Handle navigation based on authentication state
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> {
+                val user = (authState as AuthState.Authenticated).user
+                Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
+                
+                // Navigation will be handled by MainActivity for social logins
+                if (user.authProvider == "password") {
+                    navController.navigate("main") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                }
+            }
+            is AuthState.Error -> {
+                errorMessage = (authState as AuthState.Error).message
+            }
+            else -> {
+                // Do nothing for other states
+            }
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -62,6 +91,22 @@ fun LoginScreen(
                 .fillMaxSize()
                 .background(Color(0x66000000))  // Semi-transparent black overlay
         )
+        
+        // Show loading overlay when loading
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x99000000)),  // Darker semi-transparent overlay
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(60.dp),
+                    color = Color(0xFFFFEB3B), // Yellow color to match the theme
+                    strokeWidth = 5.dp
+                )
+            }
+        }
 
         // Content
         Column(
@@ -72,7 +117,7 @@ fun LoginScreen(
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(96.dp))
+            Spacer(modifier = Modifier.height(64.dp))
             
             // Title
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -169,24 +214,12 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         if (email.isNotBlank() && password.isNotBlank()) {
-                            isLoading = true
+                            // Let the viewModel handle the loading state through AuthState
                             errorMessage = ""
                             
                             scope.launch {
                                 viewModel.signIn(email, password)
-                                    .onSuccess {
-                                        isLoading = false
-                                        Toast.makeText(context, "Login successful!", Toast.LENGTH_SHORT).show()
-                                        
-                                        // Nếu đăng nhập thành công, điều hướng đến màn hình chính
-                                        navController.navigate("main") {
-                                            popUpTo("login") { inclusive = true }
-                                        }
-                                    }
-                                    .onFailure { exception ->
-                                        isLoading = false
-                                        errorMessage = exception.message ?: "Login failed"
-                                    }
+                                // The result will be handled in the LaunchedEffect tracking authState
                             }
                         } else {
                             errorMessage = "Please enter email and password"
@@ -215,6 +248,84 @@ fun LoginScreen(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+                }
+                
+                // Social Login Section
+                Column(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Or sign in with",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Facebook button
+                        Button(
+                            onClick = { onFacebookSignInClicked() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color(0xFF1877F2), // Facebook blue
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !isLoading
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_facebook),
+                                    contentDescription = "Facebook",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Facebook",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        
+                        // Google button
+                        Button(
+                            onClick = { onGoogleSignInClicked() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                backgroundColor = Color.White,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            enabled = !isLoading
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_google),
+                                    contentDescription = "Google",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Google",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
                 
