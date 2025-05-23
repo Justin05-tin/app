@@ -52,7 +52,7 @@ class AuthRepositoryImpl @Inject constructor(
         email: String,
         password: String,
         fullName: String,
-        dateOfBirth: String,
+        age: Int?,
         gender: String,
         height: Int?,
         weight: Float?,
@@ -72,7 +72,7 @@ class AuthRepositoryImpl @Inject constructor(
                 passwordHash = "", // Firebase Auth handles this
                 fullName = fullName,
                 avatarUrl = "",
-                dateOfBirth = dateOfBirth,
+                age = age,
                 gender = gender,
                 height = height,
                 weight = weight,

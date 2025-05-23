@@ -35,7 +35,12 @@ import kotlinx.coroutines.launch
 @Composable
 fun RegisterScreen(
     navController: NavController,
-    viewModel: AuthViewModel = hiltViewModel()
+    viewModel: AuthViewModel = hiltViewModel(),
+    onSuccessfulRegistration: () -> Unit = {
+        navController.navigate("login") {
+            popUpTo("register") { inclusive = true }
+        }
+    }
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -191,7 +196,7 @@ fun RegisterScreen(
                                     email = email,
                                     password = password,
                                     fullName = email.substringBefore("@"),
-                                    dateOfBirth = "",
+                                    age = null,
                                     gender = "",
                                     height = null,
                                     weight = null,
@@ -201,9 +206,7 @@ fun RegisterScreen(
                                 .onSuccess {
                                     isLoading = false
                                     Toast.makeText(context, "Registration successful!", Toast.LENGTH_SHORT).show()
-                                    navController.navigate("login") {
-                                        popUpTo("register") { inclusive = true }
-                                    }
+                                    onSuccessfulRegistration()
                                 }
                                 .onFailure { exception ->
                                     isLoading = false

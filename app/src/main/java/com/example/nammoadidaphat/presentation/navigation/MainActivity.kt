@@ -10,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,7 +57,7 @@ class MainActivity : ComponentActivity() {
                     val onboardingViewModel: OnboardingViewModel = hiltViewModel()
                     val authViewModel: AuthViewModel = hiltViewModel()
 
-                    // Khi người dùng đã đăng nhập, đánh dấu đã xem onboarding
+                    // When user signs in, mark onboarding as completed
                     val authState by authViewModel.authState.collectAsState()
                     LaunchedEffect(authState) {
                         if (authState is AuthState.Authenticated) {
@@ -86,7 +87,25 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(navController = navController)
                         }
                         composable("register") {
-                            RegisterScreen(navController = navController)
+                            RegisterScreen(
+                                navController = navController,
+                                onSuccessfulRegistration = {
+                                    navController.navigate("user_onboarding") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+                        composable("user_onboarding") {
+                            val innerNavController = rememberNavController()
+                            UserOnboardingNavGraph(
+                                navController = innerNavController,
+                                onFinished = {
+                                    navController.navigate("main") {
+                                        popUpTo("user_onboarding") { inclusive = true }
+                                    }
+                                }
+                            )
                         }
                         composable("main") {
                             BottomNavRoot(authViewModel = authViewModel, mainNavController = navController)

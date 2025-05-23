@@ -30,7 +30,6 @@ fun OnboardingScreen(
     navController: NavController,
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
-    val scope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
     
     Box(

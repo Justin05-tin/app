@@ -9,7 +9,7 @@ interface AuthRepository {
         email: String, 
         password: String, 
         fullName: String,
-        dateOfBirth: String = "",
+        age: Int? = null,
         gender: String = "",
         height: Int? = null,
         weight: Float? = null,
