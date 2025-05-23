@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "256959902340",
-    "project_id": "exc-home",
-    "storage_bucket": "exc-home.firebasestorage.app"
+    "project_number": "1026435770130",
+    "project_id": "exc-app-b1b1a",
+    "storage_bucket": "exc-app-b1b1a.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:256959902340:android:7efc198248e48e736108d1",
+        "mobilesdk_app_id": "1:1026435770130:android:edc10766526bfb510275cb",
         "android_client_info": {
           "package_name": "com.example.nammoadidaphat"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAK8VoDMfTyTO8gFiRbveYneIt58AkdATw"
+          "current_key": "AIzaSyBWgk9D8dlS72JaNv-oJZF_TLiQQ8Y7PhA"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

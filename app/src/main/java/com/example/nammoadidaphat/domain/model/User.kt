@@ -14,7 +14,8 @@ data class User(
     val goals: String = "",
     val isPremium: Boolean = false,
     val createdAt: String = "",
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    val authProvider: String = "password" // Values: "password", "google.com", "facebook.com"
 ) {
     companion object {
         @Suppress("UNCHECKED_CAST")
@@ -33,7 +34,8 @@ data class User(
                 goals = map["goals"] as? String ?: "",
                 isPremium = map["is_premium"] as? Boolean ?: false,
                 createdAt = map["created_at"] as? String ?: "",
-                updatedAt = map["updated_at"] as? String ?: ""
+                updatedAt = map["updated_at"] as? String ?: "",
+                authProvider = map["auth_provider"] as? String ?: "password"
             )
         }
     }
@@ -53,7 +55,8 @@ data class User(
             "goals" to goals,
             "is_premium" to isPremium,
             "created_at" to createdAt,
-            "updated_at" to updatedAt
+            "updated_at" to updatedAt,
+            "auth_provider" to authProvider
         )
     }
 } 

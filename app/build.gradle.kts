@@ -118,6 +118,13 @@ dependencies {
     // Accompanist libraries
     implementation("com.google.accompanist:accompanist-pager:0.32.0")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+
+    // Google Auth
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    
+    // Facebook SDK
+    implementation("com.facebook.android:facebook-login:16.2.0")
+    implementation("com.facebook.android:facebook-android-sdk:16.2.0")
 }
 
 apply(plugin = "com.google.gms.google-services")

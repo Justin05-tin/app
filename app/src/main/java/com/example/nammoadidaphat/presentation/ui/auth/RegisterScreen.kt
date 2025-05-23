@@ -1,8 +1,13 @@
 package com.example.nammoadidaphat.presentation.ui.auth
 
+import android.app.Activity
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.R
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
+import com.facebook.CallbackManager
 import kotlinx.coroutines.launch
 
 @Composable
@@ -50,6 +56,65 @@ fun RegisterScreen(
     
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
+    // Google Sign-In Launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            isLoading = true
+            errorMessage = ""
+            
+            scope.launch {
+                viewModel.handleGoogleSignInResult(result.data)
+                    .onSuccess {
+                        isLoading = false
+                        Toast.makeText(context, "Google sign-in successful!", Toast.LENGTH_SHORT).show()
+                        onSuccessfulRegistration()
+                    }
+                    .onFailure { exception ->
+                        isLoading = false
+                        errorMessage = exception.message ?: "Google sign-in failed"
+                    }
+            }
+        }
+    }
+    
+    // Facebook Sign-In Handler
+    LaunchedEffect(Unit) {
+        // Register Facebook SDK in the Activity
+        // This is necessary for Facebook SDK to work
+        // In a real app, you would do this in your MainActivity
+    }
+    
+    fun handleFacebookSignIn() {
+        isLoading = true
+        errorMessage = ""
+        
+        viewModel.getFacebookSignInIntent() // This triggers Facebook login flow
+        
+        // Actual result handling will be done via Facebook SDK callbacks
+        // which will eventually call our ViewModel's handleFacebookSignInResult method
+        
+        scope.launch {
+            try {
+                // This is a simplified example - in a real app, 
+                // you need to properly handle the activity result
+                val result = viewModel.handleFacebookSignInResult(null)
+                result.onSuccess {
+                    isLoading = false
+                    Toast.makeText(context, "Facebook sign-in successful!", Toast.LENGTH_SHORT).show()
+                    onSuccessfulRegistration()
+                }.onFailure { exception ->
+                    isLoading = false
+                    errorMessage = exception.message ?: "Facebook sign-in failed"
+                }
+            } catch (e: Exception) {
+                isLoading = false
+                errorMessage = e.message ?: "Facebook sign-in failed"
+            }
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -265,55 +330,77 @@ fun RegisterScreen(
                 
                 // Social login buttons
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Apple sign in
-                    Box(
+                    // Facebook sign in button
+                    Button(
+                        onClick = { handleFacebookSignIn() },
                         modifier = Modifier
-                            .size(50.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
+                            .weight(1f)
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color(0xFF1877F2),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !isLoading
                     ) {
-                        Icon(
-                            painter = painterResource(id = android.R.drawable.ic_menu_myplaces),
-                            contentDescription = "Sign in with Apple",
-                            tint = Color.Black,
-                            modifier = Modifier.size(30.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_facebook),
+                                contentDescription = "Facebook",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Facebook",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                     
-                    // Facebook sign in
-                    Box(
+                    // Google sign in button
+                    Button(
+                        onClick = {
+                            googleSignInLauncher.launch(viewModel.getGoogleSignInIntent())
+                        },
                         modifier = Modifier
-                            .size(50.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF1877F2)),
-                        contentAlignment = Alignment.Center
+                            .weight(1f)
+                            .height(52.dp)
+                            .border(
+                                width = 1.dp,
+                                color = Color.LightGray,
+                                shape = RoundedCornerShape(8.dp)
+                            ),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color.White,
+                            contentColor = Color.DarkGray
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !isLoading
                     ) {
-                        Text(
-                            text = "f",
-                            color = Color.White,
-                            fontSize = 30.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    // Google sign in
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "G",
-                            color = Color(0xFF4285F4),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_google),
+                                contentDescription = "Google",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Text(
+                                text = "Google",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
                 

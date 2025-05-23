@@ -1,27 +1,67 @@
 package com.example.nammoadidaphat.data.repository
 
+import android.content.Context
+import android.content.Intent
+import android.app.Activity
+import androidx.activity.result.ActivityResultLauncher
 import com.example.nammoadidaphat.domain.model.User
 import com.example.nammoadidaphat.domain.repository.AuthRepository
+import com.facebook.CallbackManager
+import com.facebook.FacebookCallback
+import com.facebook.FacebookException
+import com.facebook.login.LoginManager
+import com.facebook.login.LoginResult
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import androidx.activity.ComponentActivity
 
 class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    @ApplicationContext private val context: Context
 ) : AuthRepository {
 
     private val usersCollection = firestore.collection("users")
+    
+    // Google sign in
+    private val googleSignInClient: GoogleSignInClient by lazy {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken("1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com")
+            .requestEmail()
+            .build()
+        GoogleSignIn.getClient(context, gso)
+    }
+    
+    // Facebook sign in
+    private val callbackManager: CallbackManager by lazy {
+        CallbackManager.Factory.create()
+    }
 
     override suspend fun signIn(email: String, password: String): Result<User> = try {
         // Auth sign in
@@ -95,6 +135,20 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signOut() {
         auth.signOut()
+        
+        // Sign out from Google
+        try {
+            googleSignInClient.signOut().await()
+        } catch (e: Exception) {
+            Timber.e(e, "Error signing out from Google")
+        }
+        
+        // Sign out from Facebook
+        try {
+            LoginManager.getInstance().logOut()
+        } catch (e: Exception) {
+            Timber.e(e, "Error signing out from Facebook")
+        }
     }
 
     override suspend fun resetPassword(email: String): Result<Unit> = try {
@@ -171,37 +225,190 @@ class AuthRepositoryImpl @Inject constructor(
             auth.removeAuthStateListener(authStateListener) 
         }
     }
+    
+    override fun getGoogleSignInIntent(): Intent {
+        return googleSignInClient.signInIntent
+    }
+    
+    override suspend fun handleGoogleSignInResult(data: Intent?): Result<User> {
+        try {
+            if (data == null) {
+                return Result.failure(Exception("Sign-in intent data is null"))
+            }
+            
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            val account = task.getResult(Exception::class.java)
+            
+            if (account != null) {
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                val user = signInWithCredential(credential)
+                
+                // Create or update user profile
+                val userData = createOrUpdateSocialUserProfile(
+                    firebaseUser = user,
+                    providerId = "google.com",
+                    fullName = account.displayName ?: "",
+                    email = account.email ?: "",
+                    photoUrl = account.photoUrl?.toString() ?: ""
+                )
+                
+                return Result.success(userData)
+            } else {
+                return Result.failure(Exception("Google sign in failed"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Google sign in error")
+            return Result.failure(e)
+        }
+    }
+    
+    override fun getFacebookSignInIntent(): Intent {
+        // This is a dummy intent as Facebook uses its own mechanism
+        return Intent()
+    }
+    
+    // Function to initiate Facebook login - separate from the intent getter
+    fun initiateLoginWithFacebook(activity: Activity) {
+        LoginManager.getInstance().logInWithReadPermissions(activity, listOf("email", "public_profile"))
+    }
+    
+    override suspend fun handleFacebookSignInResult(data: Intent?): Result<User> {
+        return suspendCoroutine { continuation ->
+            try {
+                LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
+                    override fun onSuccess(result: LoginResult) {
+                        // This runs on the main thread, so we need to handle it carefully
+                        val credential = FacebookAuthProvider.getCredential(result.accessToken.token)
+                        
+                        // Use a simple coroutine scope instead of lifecycleScope
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                val firebaseUser = signInWithCredential(credential)
+                                
+                                // Get user data from the token
+                                val userData = createOrUpdateSocialUserProfile(
+                                    firebaseUser = firebaseUser,
+                                    providerId = "facebook.com",
+                                    fullName = firebaseUser.displayName ?: "",
+                                    email = firebaseUser.email ?: "",
+                                    photoUrl = firebaseUser.photoUrl?.toString() ?: ""
+                                )
+                                
+                                continuation.resume(Result.success(userData))
+                            } catch (e: Exception) {
+                                Timber.e(e, "Facebook Firebase auth error")
+                                continuation.resume(Result.failure(e))
+                            }
+                        }
+                    }
+                    
+                    override fun onCancel() {
+                        Timber.d("Facebook login cancelled")
+                        continuation.resume(Result.failure(Exception("Facebook login was cancelled")))
+                    }
+                    
+                    override fun onError(error: FacebookException) {
+                        Timber.e(error, "Facebook login error")
+                        continuation.resume(Result.failure(error))
+                    }
+                })
+                
+                callbackManager.onActivityResult(
+                    0, // These parameters will be replaced by the actual values
+                    0, // from the activity result
+                    data
+                )
+                
+            } catch (e: Exception) {
+                Timber.e(e, "Facebook login general error")
+                continuation.resume(Result.failure(e))
+            }
+        }
+    }
 
-    private suspend fun getUserFromFirestore(userId: String): User = suspendCoroutine { continuation ->
-        usersCollection.document(userId).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val userData = User.fromMap(document.data ?: emptyMap())
-                    continuation.resume(userData)
-                } else {
-                    // If user exists in Auth but not in Firestore, create a basic record
-                    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    val timestamp = dateFormat.format(Date())
-                    
-                    val userData = User(
-                        userId = userId,
-                        email = auth.currentUser?.email ?: "",
-                        createdAt = timestamp,
-                        updatedAt = timestamp
-                    )
-                    
-                    // Create the user in Firestore
-                    usersCollection.document(userId).set(userData.toMap())
-                        .addOnSuccessListener {
-                            continuation.resume(userData)
-                        }
-                        .addOnFailureListener {
-                            continuation.resumeWithException(it)
-                        }
+    // Helper to sign in with credential
+    private suspend fun signInWithCredential(credential: AuthCredential): FirebaseUser {
+        val result = auth.signInWithCredential(credential).await()
+        return result.user ?: throw Exception("Failed to sign in with credential")
+    }
+    
+    // Helper to create or update user profile for social logins
+    private suspend fun createOrUpdateSocialUserProfile(
+        firebaseUser: FirebaseUser,
+        providerId: String,
+        fullName: String,
+        email: String,
+        photoUrl: String
+    ): User {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val timestamp = dateFormat.format(Date())
+        
+        // Check if user exists
+        val userDoc = usersCollection.document(firebaseUser.uid).get().await()
+        
+        return if (userDoc.exists()) {
+            // Update existing user
+            val updates = mapOf(
+                "updated_at" to timestamp,
+                "email" to email,
+                "avatarUrl" to photoUrl
+            )
+            
+            usersCollection.document(firebaseUser.uid).update(updates).await()
+            
+            // Get updated user data
+            getUserFromFirestore(firebaseUser.uid)
+        } else {
+            // Create new user
+            val userData = User(
+                userId = firebaseUser.uid,
+                email = email,
+                passwordHash = "", // Not used for social logins
+                fullName = fullName,
+                avatarUrl = photoUrl,
+                isPremium = false,
+                createdAt = timestamp,
+                updatedAt = timestamp,
+                authProvider = providerId
+            )
+            
+            usersCollection.document(firebaseUser.uid).set(userData.toMap()).await()
+            userData
+        }
+    }
+
+    private suspend fun getUserFromFirestore(userId: String): User {
+        return suspendCoroutine { continuation ->
+            usersCollection.document(userId).get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        val userData = User.fromMap(document.data ?: emptyMap())
+                        continuation.resume(userData)
+                    } else {
+                        // If user exists in Auth but not in Firestore, create a basic record
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                        val timestamp = dateFormat.format(Date())
+                        
+                        val userData = User(
+                            userId = userId,
+                            email = auth.currentUser?.email ?: "",
+                            createdAt = timestamp,
+                            updatedAt = timestamp
+                        )
+                        
+                        // Create the user in Firestore
+                        usersCollection.document(userId).set(userData.toMap())
+                            .addOnSuccessListener {
+                                continuation.resume(userData)
+                            }
+                            .addOnFailureListener {
+                                continuation.resumeWithException(it)
+                            }
+                    }
                 }
-            }
-            .addOnFailureListener {
-                continuation.resumeWithException(it)
-            }
+                .addOnFailureListener {
+                    continuation.resumeWithException(it)
+                }
+        }
     }
 } 
