@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,6 +28,7 @@ import com.example.nammoadidaphat.R
 import timber.log.Timber
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import androidx.compose.ui.window.Dialog
 
 @Composable
 fun ProfileScreen(
@@ -35,6 +38,9 @@ fun ProfileScreen(
     // Get current user state from ViewModel
     val uiState by viewModel.uiState.collectAsState(initial = ProfileUiState(isLoading = true))
     val context = LocalContext.current
+    
+    // State for logout dialog
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     // Helper function to check if a resource exists
     fun isResourceAvailable(resId: Int): Boolean {
@@ -359,7 +365,7 @@ fun ProfileScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.logout() }
+                                .clickable { showLogoutDialog = true }
                                 .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -378,6 +384,89 @@ fun ProfileScreen(
                                 color = Color(0xFFE57373) // Red color
                             )
                         }
+                    }
+                }
+            }
+        }
+        
+        // Logout confirmation dialog
+        if (showLogoutDialog) {
+            Dialog(
+                onDismissRequest = { showLogoutDialog = false }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Logout",
+                        color = Color(0xFFE57373),
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    
+                    Text(
+                        text = "Are you sure you want to log out?",
+                        fontSize = 16.sp,
+                        color = Color.DarkGray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    // Logout button
+                    Button(
+                        onClick = {
+                            viewModel.logout()
+                            showLogoutDialog = false
+                            // Navigate back to login screen
+                            navController.navigate("login") {
+                                popUpTo("main_nav_graph") { inclusive = true }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color(0xFF7B50E8),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(28.dp)
+                    ) {
+                        Text(
+                            text = "Yes, Logout",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Cancel button
+                    OutlinedButton(
+                        onClick = { showLogoutDialog = false },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF7B50E8)
+                        ),
+                        shape = RoundedCornerShape(28.dp),
+                        border = BorderStroke(1.dp, Color(0xFF7B50E8).copy(alpha = 0.5f))
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }
