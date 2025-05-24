@@ -20,6 +20,11 @@ import javax.inject.Singleton
 // Create a single DataStore instance for the entire application
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
 
+data class UserPreferences(
+    val hasSeenOnboarding: Boolean = false,
+    val isDarkTheme: Boolean = false
+)
+
 @Singleton
 class UserPreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
@@ -28,6 +33,7 @@ class UserPreferencesRepository @Inject constructor(
 
     companion object {
         private val HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
+        private val IS_DARK_THEME = booleanPreferencesKey("is_dark_theme")
     }
 
     suspend fun saveOnboardingState(completed: Boolean) {
@@ -39,6 +45,17 @@ class UserPreferencesRepository @Inject constructor(
             }
         } catch (e: IOException) {
             Timber.e(e, "Error saving onboarding state")
+        }
+    }
+    
+    suspend fun setDarkTheme(enabled: Boolean) {
+        try {
+            Timber.d("Saving dark theme preference: $enabled")
+            dataStore.edit { preferences ->
+                preferences[IS_DARK_THEME] = enabled
+            }
+        } catch (e: IOException) {
+            Timber.e(e, "Error saving dark theme preference")
         }
     }
 
@@ -55,6 +72,22 @@ class UserPreferencesRepository @Inject constructor(
             val hasSeenValue = preferences[HAS_SEEN_ONBOARDING] ?: false
             Timber.d("Retrieved onboarding state: $hasSeenValue")
             hasSeenValue
+        }
+        
+    fun getUserPreferences(): Flow<UserPreferences> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                Timber.e(exception, "Error reading user preferences")
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            UserPreferences(
+                hasSeenOnboarding = preferences[HAS_SEEN_ONBOARDING] ?: false,
+                isDarkTheme = preferences[IS_DARK_THEME] ?: false
+            )
         }
 
     suspend fun resetOnboardingState() {

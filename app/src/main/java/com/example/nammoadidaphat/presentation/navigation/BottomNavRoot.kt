@@ -16,6 +16,7 @@ import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
+import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +67,11 @@ fun BottomNavRoot(
                 ReportScreen() 
             }
             composable(BottomNavScreen.Profile.route) { 
-                ProfileScreen() 
+                val profileViewModel = hiltViewModel<ProfileViewModel>()
+                ProfileScreen(
+                    navController = mainNavController,
+                    viewModel = profileViewModel
+                ) 
             }
         }
     }
