@@ -21,7 +21,6 @@ import com.example.nammoadidaphat.presentation.ui.onboarding.FitnessLevelScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.GenderScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.GoalScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.HeightScreen
-import com.example.nammoadidaphat.presentation.ui.onboarding.PageIndicator
 import com.example.nammoadidaphat.presentation.ui.onboarding.WeightScreen
 import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -57,7 +56,8 @@ fun UserOnboardingNavGraph(
         HorizontalPager(
             count = pageCount,
             state = pagerState,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = false // Disable swiping to ensure only button navigation
         ) { page ->
             when (page) {
                 OnboardingPage.Gender.ordinal -> {
@@ -133,7 +133,7 @@ fun UserOnboardingNavGraph(
                 OnboardingPage.FitnessLevel.ordinal -> {
                     FitnessLevelScreen(
                         viewModel = viewModel,
-                        onFinish = onFinished,
+                        onComplete = onFinished,
                         onBack = {
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(OnboardingPage.Goal.ordinal)
@@ -143,24 +143,6 @@ fun UserOnboardingNavGraph(
                 }
             }
         }
-        
-        // Page indicator at the bottom
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            PageIndicator(
-                pageCount = pageCount,
-                currentPage = pagerState.currentPage,
-                onPageSelected = { page ->
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(page)
-                    }
-                }
-            )
-        }
+        // Page indicators have been removed as requested
     }
 } 

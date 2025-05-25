@@ -45,19 +45,31 @@ class ProfileViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 authRepository.getCurrentUser().collect { user ->
                     if (user != null) {
-                        _uiState.value = _uiState.value.copy(isLoading = false, user = user)
+                        _uiState.value = _uiState.value.copy(isLoading = false, user = user, error = null)
                     } else {
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            error = "User not found"
-                        )
+                        if (_uiState.value.user != null) {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                error = null
+                            )
+                        } else {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                error = "User not found",
+                                user = User()
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to load user profile")
+                
+                val currentUser = _uiState.value.user ?: User()
+                
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to load profile: ${e.message}"
+                    error = "Failed to load profile: ${e.message}",
+                    user = currentUser
                 )
             }
         }

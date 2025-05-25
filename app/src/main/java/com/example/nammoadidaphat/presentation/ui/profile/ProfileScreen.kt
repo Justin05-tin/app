@@ -29,6 +29,7 @@ import timber.log.Timber
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.ui.window.Dialog
+import com.example.nammoadidaphat.domain.model.User
 
 @Composable
 fun ProfileScreen(
@@ -62,11 +63,72 @@ fun ProfileScreen(
             .background(Color.White)
     ) {
         if (uiState.isLoading) {
+            // Only show loading indicator when loading
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
                 color = Color(0xFF7B50E8)
             )
+        } else if (uiState.error != null) {
+            // Show error message if there's an error
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Error",
+                    tint = Color(0xFFE57373),
+                    modifier = Modifier.size(48.dp)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Text(
+                    text = "Something went wrong",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = uiState.error ?: "Failed to load profile",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = { viewModel.getCurrentUser() },
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFF7B50E8),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("Try Again")
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                TextButton(onClick = {
+                    viewModel.logout()
+                    navController.navigate("login") {
+                        popUpTo("main_nav_graph") { inclusive = true }
+                    }
+                }) {
+                    Text("Log Out", color = Color(0xFF7B50E8))
+                }
+            }
         } else {
+            // Only show the content when not loading and no errors
+            val user = uiState.user ?: User() // Ensure we have a non-null user object
+            
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -92,7 +154,7 @@ fun ProfileScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_fitness),
+                                imageVector = Icons.Default.Star,
                                 contentDescription = "Fitness",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
@@ -127,16 +189,18 @@ fun ProfileScreen(
                 ) {
                     // Profile Picture with Edit Button
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        // Profile Image
-                        val profileImageUrl = uiState.user?.avatarUrl
+                        // Profile Image - safely handle null/empty values
+                        val profileImageUrl = user.avatarUrl
                         
                         if (profileImageUrl != null && profileImageUrl.isNotEmpty()) {
-                            // Load image from URL using Coil
+                            // Load image from URL using Coil without try-catch
                             Image(
                                 painter = rememberAsyncImagePainter(
                                     ImageRequest.Builder(LocalContext.current)
                                         .data(profileImageUrl)
                                         .crossfade(true)
+                                        .error(R.drawable.profile_placeholder)
+                                        .fallback(R.drawable.profile_placeholder)
                                         .build()
                                 ),
                                 contentDescription = "Profile Picture",
@@ -146,33 +210,7 @@ fun ProfileScreen(
                                     .clip(CircleShape)
                             )
                         } else {
-                            // Replace try-catch with direct fallback logic
-                            if (isResourceAvailable(R.drawable.profile_placeholder)) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.profile_placeholder),
-                                    contentDescription = "Profile Picture",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(120.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                // Fallback - show a colored box with person icon
-                                Box(
-                                    modifier = Modifier
-                                        .size(120.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.LightGray),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = "Profile",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(60.dp)
-                                    )
-                                }
-                            }
+                            DefaultProfileImage()
                         }
                         
                         // Edit Button (Purple circle with edit icon)
@@ -196,18 +234,18 @@ fun ProfileScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // User Name
+                    // User Name - safely handle null value with fallback
                     Text(
-                        text = uiState.user?.fullName ?: "Christina Ainsley",
+                        text = user.fullName.takeIf { it.isNotBlank() } ?: "User",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
                     
                     Spacer(modifier = Modifier.height(4.dp))
                     
-                    // User Email
+                    // User Email - safely handle null value with fallback
                     Text(
-                        text = uiState.user?.email ?: "christina_ainsley@yourdomain.com",
+                        text = user.email.takeIf { it.isNotBlank() } ?: "",
                         fontSize = 16.sp,
                         color = Color.Gray
                     )
@@ -215,7 +253,8 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     // Premium Upgrade Banner - only show if user is not premium
-                    if (uiState.user?.isPremium != true) {
+                    // Safely handle null value with default false
+                    if (user.isPremium != true) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -500,6 +539,51 @@ fun MenuRow(
             text = title,
             fontSize = 16.sp,
             color = Color(0xFF333333)
+        )
+    }
+}
+
+@Composable
+private fun DefaultProfileImage() {
+    // Pre-compute whether the placeholder is available
+    val context = LocalContext.current
+    val isPlaceholderAvailable = remember {
+        try {
+            context.resources.getResourceName(R.drawable.profile_placeholder)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    if (isPlaceholderAvailable) {
+        Image(
+            painter = painterResource(id = R.drawable.profile_placeholder),
+            contentDescription = "Profile Picture",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+        )
+    } else {
+        FallbackProfileBox()
+    }
+}
+
+@Composable
+private fun FallbackProfileBox() {
+    Box(
+        modifier = Modifier
+            .size(120.dp)
+            .clip(CircleShape)
+            .background(Color.LightGray),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.Person,
+            contentDescription = "Profile",
+            tint = Color.White,
+            modifier = Modifier.size(60.dp)
         )
     }
 } 

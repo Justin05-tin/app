@@ -20,22 +20,40 @@ data class User(
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun fromMap(map: Map<String, Any?>): User {
+            return try {
+                User(
+                    userId = map["user_id"] as? String ?: "",
+                    email = map["email"] as? String ?: "",
+                    passwordHash = map["password_hash"] as? String ?: "",
+                    fullName = map["full_name"] as? String ?: "",
+                    avatarUrl = map["avatar_url"] as? String ?: "",
+                    age = (map["age"] as? Long)?.toInt() ?: (map["age"] as? Int),
+                    gender = map["gender"] as? String ?: "",
+                    height = (map["height"] as? Long)?.toInt() ?: (map["height"] as? Int),
+                    weight = (map["weight"] as? Double)?.toFloat() ?: (map["weight"] as? Float),
+                    fitnessLevel = map["fitness_level"] as? String ?: "",
+                    goals = map["goals"] as? String ?: "",
+                    isPremium = map["is_premium"] as? Boolean ?: false,
+                    createdAt = map["created_at"] as? String ?: "",
+                    updatedAt = map["updated_at"] as? String ?: "",
+                    authProvider = map["auth_provider"] as? String ?: "password"
+                )
+            } catch (e: Exception) {
+                // If any exception occurs during mapping, return a minimal valid user
+                User(
+                    userId = map["user_id"] as? String ?: "",
+                    email = map["email"] as? String ?: "",
+                    authProvider = map["auth_provider"] as? String ?: "password"
+                )
+            }
+        }
+        
+        // Create a safe user object with just the essential fields
+        fun createMinimalUser(userId: String, email: String, authProvider: String = "password"): User {
             return User(
-                userId = map["user_id"] as? String ?: "",
-                email = map["email"] as? String ?: "",
-                passwordHash = map["password_hash"] as? String ?: "",
-                fullName = map["full_name"] as? String ?: "",
-                avatarUrl = map["avatar_url"] as? String ?: "",
-                age = (map["age"] as? Long)?.toInt() ?: (map["age"] as? Int),
-                gender = map["gender"] as? String ?: "",
-                height = (map["height"] as? Long)?.toInt() ?: (map["height"] as? Int),
-                weight = (map["weight"] as? Double)?.toFloat() ?: (map["weight"] as? Float),
-                fitnessLevel = map["fitness_level"] as? String ?: "",
-                goals = map["goals"] as? String ?: "",
-                isPremium = map["is_premium"] as? Boolean ?: false,
-                createdAt = map["created_at"] as? String ?: "",
-                updatedAt = map["updated_at"] as? String ?: "",
-                authProvider = map["auth_provider"] as? String ?: "password"
+                userId = userId,
+                email = email,
+                authProvider = authProvider
             )
         }
     }
@@ -58,5 +76,16 @@ data class User(
             "updated_at" to updatedAt,
             "auth_provider" to authProvider
         )
+    }
+    
+    // Check if all required profile fields are present
+    fun hasCompleteProfile(): Boolean {
+        return fullName.isNotBlank() && 
+               gender.isNotBlank() && 
+               age != null && 
+               height != null && 
+               weight != null && 
+               fitnessLevel.isNotBlank() && 
+               goals.isNotBlank()
     }
 } 

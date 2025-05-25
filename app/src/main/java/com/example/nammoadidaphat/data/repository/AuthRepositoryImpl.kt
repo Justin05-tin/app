@@ -76,6 +76,18 @@ class AuthRepositoryImpl @Inject constructor(
             val userDoc = usersCollection.document(user.uid).get().await()
             if (userDoc.exists()) {
                 usersCollection.document(user.uid).update("updated_at", timestamp).await()
+            } else {
+                // Create a basic user document if it doesn't exist
+                val basicUserData = User(
+                    userId = user.uid,
+                    email = email,
+                    fullName = user.displayName ?: "",
+                    avatarUrl = user.photoUrl?.toString() ?: "",
+                    createdAt = timestamp,
+                    updatedAt = timestamp,
+                    authProvider = "password"
+                )
+                usersCollection.document(user.uid).set(basicUserData.toMap()).await()
             }
             
             // Get user data from Firestore
@@ -181,38 +193,81 @@ class AuthRepositoryImpl @Inject constructor(
             if (firebaseUser == null) {
                 trySend(null)
             } else {
-                // User is signed in, get their data from Firestore
-                usersCollection.document(firebaseUser.uid).get()
-                    .addOnSuccessListener { document ->
-                        if (document != null && document.exists()) {
-                            val userData = User.fromMap(document.data ?: emptyMap())
-                            trySend(userData)
-                        } else {
-                            // Create basic profile if Firestore data doesn't exist
-                            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                            val timestamp = dateFormat.format(Date())
-                            
-                            val userData = User(
+                try {
+                    // User is signed in, get their data from Firestore
+                    usersCollection.document(firebaseUser.uid).get()
+                        .addOnSuccessListener { document ->
+                            try {
+                                if (document != null && document.exists()) {
+                                    val userData = try {
+                                        User.fromMap(document.data ?: emptyMap())
+                                    } catch (e: Exception) {
+                                        Timber.e(e, "Error parsing user data")
+                                        // Create minimal user to prevent crashes
+                                        User.createMinimalUser(
+                                            userId = firebaseUser.uid,
+                                            email = firebaseUser.email ?: "",
+                                            authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
+                                        )
+                                    }
+                                    trySend(userData)
+                                } else {
+                                    // Create basic profile if Firestore data doesn't exist
+                                    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                                    val timestamp = dateFormat.format(Date())
+                                    
+                                    val providerId = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
+                                    
+                                    val userData = User(
+                                        userId = firebaseUser.uid,
+                                        email = firebaseUser.email ?: "",
+                                        fullName = firebaseUser.displayName ?: "",
+                                        avatarUrl = firebaseUser.photoUrl?.toString() ?: "",
+                                        createdAt = timestamp,
+                                        updatedAt = timestamp,
+                                        authProvider = providerId
+                                    )
+                                    
+                                    // Don't block the flow - just create the user record in the background
+                                    usersCollection.document(firebaseUser.uid)
+                                        .set(userData.toMap())
+                                        .addOnFailureListener { e ->
+                                            Timber.e(e, "Failed to create user document")
+                                        }
+                                    
+                                    trySend(userData)
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Error processing user data in getCurrentUser")
+                                // Even if data processing fails, return a basic user object so the app doesn't crash
+                                val basicUser = User.createMinimalUser(
+                                    userId = firebaseUser.uid,
+                                    email = firebaseUser.email ?: "",
+                                    authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
+                                )
+                                trySend(basicUser)
+                            }
+                        }
+                        .addOnFailureListener { exception ->
+                            Timber.e(exception, "Failed to get user data from Firestore")
+                            // Even if Firestore fails, we still know the user is authenticated
+                            val basicUser = User.createMinimalUser(
                                 userId = firebaseUser.uid,
                                 email = firebaseUser.email ?: "",
-                                createdAt = timestamp,
-                                updatedAt = timestamp
+                                authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
                             )
-                            
-                            // Don't block the flow - just create the user record in the background
-                            usersCollection.document(firebaseUser.uid).set(userData.toMap())
-                            
-                            trySend(userData)
+                            trySend(basicUser)
                         }
-                    }
-                    .addOnFailureListener {
-                        // Even if Firestore fails, we still know the user is authenticated
-                        val basicUser = User(
-                            userId = firebaseUser.uid,
-                            email = firebaseUser.email ?: ""
-                        )
-                        trySend(basicUser)
-                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Unexpected error in getCurrentUser")
+                    // Return a basic user even in case of unexpected errors
+                    val basicUser = User.createMinimalUser(
+                        userId = firebaseUser.uid,
+                        email = firebaseUser.email ?: "",
+                        authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
+                    ) 
+                    trySend(basicUser)
+                }
             }
         }
         
@@ -350,7 +405,7 @@ class AuthRepositoryImpl @Inject constructor(
             val updates = mapOf(
                 "updated_at" to timestamp,
                 "email" to email,
-                "avatarUrl" to photoUrl
+                "avatar_url" to photoUrl
             )
             
             usersCollection.document(firebaseUser.uid).update(updates).await()
@@ -378,36 +433,85 @@ class AuthRepositoryImpl @Inject constructor(
 
     private suspend fun getUserFromFirestore(userId: String): User {
         return suspendCoroutine { continuation ->
-            usersCollection.document(userId).get()
-                .addOnSuccessListener { document ->
-                    if (document != null && document.exists()) {
-                        val userData = User.fromMap(document.data ?: emptyMap())
-                        continuation.resume(userData)
-                    } else {
-                        // If user exists in Auth but not in Firestore, create a basic record
-                        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                        val timestamp = dateFormat.format(Date())
-                        
-                        val userData = User(
-                            userId = userId,
-                            email = auth.currentUser?.email ?: "",
-                            createdAt = timestamp,
-                            updatedAt = timestamp
-                        )
-                        
-                        // Create the user in Firestore
-                        usersCollection.document(userId).set(userData.toMap())
-                            .addOnSuccessListener {
+            try {
+                usersCollection.document(userId).get()
+                    .addOnSuccessListener { document ->
+                        try {
+                            if (document != null && document.exists()) {
+                                val userData = try {
+                                    User.fromMap(document.data ?: emptyMap())
+                                } catch (e: Exception) {
+                                    Timber.e(e, "Error parsing user data in getUserFromFirestore")
+                                    // Return minimal user to prevent crashes
+                                    val currentUser = auth.currentUser
+                                    User.createMinimalUser(
+                                        userId = userId,
+                                        email = currentUser?.email ?: "",
+                                        authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
+                                    )
+                                }
                                 continuation.resume(userData)
+                            } else {
+                                // If user exists in Auth but not in Firestore, create a basic record
+                                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                                val timestamp = dateFormat.format(Date())
+                                
+                                val currentUser = auth.currentUser
+                                val userData = User(
+                                    userId = userId,
+                                    email = currentUser?.email ?: "",
+                                    fullName = currentUser?.displayName ?: "",
+                                    avatarUrl = currentUser?.photoUrl?.toString() ?: "",
+                                    createdAt = timestamp,
+                                    updatedAt = timestamp,
+                                    authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
+                                )
+                                
+                                // Create the user in Firestore
+                                usersCollection.document(userId).set(userData.toMap())
+                                    .addOnSuccessListener {
+                                        continuation.resume(userData)
+                                    }
+                                    .addOnFailureListener { error ->
+                                        Timber.e(error, "Failed to create user in Firestore")
+                                        // Return basic user data instead of failing
+                                        continuation.resume(userData)
+                                    }
                             }
-                            .addOnFailureListener {
-                                continuation.resumeWithException(it)
-                            }
+                        } catch (e: Exception) {
+                            Timber.e(e, "Error processing user data in getUserFromFirestore")
+                            // Return basic user data instead of failing
+                            val currentUser = auth.currentUser
+                            val basicUser = User.createMinimalUser(
+                                userId = userId,
+                                email = currentUser?.email ?: "",
+                                authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
+                            )
+                            continuation.resume(basicUser)
+                        }
                     }
-                }
-                .addOnFailureListener {
-                    continuation.resumeWithException(it)
-                }
+                    .addOnFailureListener { error ->
+                        Timber.e(error, "Failed to get user document")
+                        // Return basic user object instead of throwing exception
+                        val currentUser = auth.currentUser
+                        val basicUser = User.createMinimalUser(
+                            userId = userId,
+                            email = currentUser?.email ?: "",
+                            authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
+                        )
+                        continuation.resume(basicUser)
+                    }
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error in getUserFromFirestore")
+                // Handle any unexpected exceptions by returning a basic user
+                val currentUser = auth.currentUser
+                val basicUser = User.createMinimalUser(
+                    userId = userId,
+                    email = currentUser?.email ?: "",
+                    authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
+                ) 
+                continuation.resume(basicUser)
+            }
         }
     }
     

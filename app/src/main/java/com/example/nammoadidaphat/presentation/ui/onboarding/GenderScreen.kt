@@ -1,7 +1,5 @@
 package com.example.nammoadidaphat.presentation.ui.onboarding
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,139 +12,97 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.nammoadidaphat.R
 import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
-import com.example.nammoadidaphat.ui.theme.AppYellow
 
 @Composable
-fun GenderScreen(
-    viewModel: UserOnboardingViewModel,
-    onContinue: () -> Unit
-) {
+fun GenderScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit) {
     val gender by viewModel.gender.collectAsState()
-    val maleSelected = gender == "male"
-    val femaleSelected = gender == "female"
     val scrollState = rememberScrollState()
+    val selectedGender = remember { mutableStateOf(gender.ifEmpty { "male" }) }
     
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Background Image with overlay
-        Image(
-            painter = painterResource(id = R.drawable.login_background),
-            contentDescription = "Background image",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
-        // Dark overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0x66000000))  // Semi-transparent black overlay
-        )
-        
-        // Content
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(scrollState),
+            modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(scrollState),
             horizontalAlignment = Alignment.Start
         ) {
-            // Back button (disabled for first screen)
-            IconButton(
-                onClick = { /* No back action on first screen */ },
-                enabled = false
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.Transparent
-                )
-            }
-            
             Text(
-                text = "What's Your Gender",
+                text = "Tell us About Yourself",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.Black
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "This helps us create a personalized fitness program just for you.",
+                text = "To give you a better experience we need to know your gender",
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.7f)
+                color = Color.Gray
             )
             
             Spacer(modifier = Modifier.height(40.dp))
             
+            // Gender selection options
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Male Option
                 GenderOption(
-                    modifier = Modifier.weight(1f),
-                    icon = R.drawable.ic_male,
-                    label = "Male",
-                    isSelected = maleSelected,
-                    selectedColor = AppYellow,
-                    onClick = { viewModel.updateGender("male") }
+                    gender = "male",
+                    isSelected = selectedGender.value == "male",
+                    onClick = {
+                        selectedGender.value = "male"
+                        viewModel.updateGender("male")
+                    },
+                    modifier = Modifier.weight(1f)
                 )
                 
                 // Female Option
                 GenderOption(
-                    modifier = Modifier.weight(1f),
-                    icon = R.drawable.ic_female,
-                    label = "Female",
-                    isSelected = femaleSelected,
-                    selectedColor = AppYellow,
-                    onClick = { viewModel.updateGender("female") }
+                    gender = "female",
+                    isSelected = selectedGender.value == "female",
+                    onClick = {
+                        selectedGender.value = "female"
+                        viewModel.updateGender("female")
+                    },
+                    modifier = Modifier.weight(1f)
                 )
             }
             
             Spacer(modifier = Modifier.weight(1f))
             
+            // Continue Button placed at the bottom
             Button(
                 onClick = onContinue,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF8B5CF6),
+                    contentColor = Color.White
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppYellow,
-                    contentColor = Color.Black
-                ),
-                shape = RoundedCornerShape(28.dp),
-                enabled = gender.isNotEmpty()
+                shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
                     text = "Continue",
@@ -154,57 +110,60 @@ fun GenderScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
-            
-            // Increase bottom spacing to avoid overlap with PageIndicator
-            Spacer(modifier = Modifier.height(70.dp))
         }
     }
 }
 
 @Composable
 fun GenderOption(
-    modifier: Modifier = Modifier,
-    icon: Int,
-    label: String,
+    gender: String,
     isSelected: Boolean,
-    selectedColor: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val backgroundColor = if (isSelected) selectedColor else Color.Transparent
-    val labelColor = if (isSelected) Color.Black else Color.White
+    val borderColor = if (isSelected) Color(0xFF8B5CF6) else Color.LightGray
+    val backgroundColor = if (isSelected) Color(0xFFEDE9FE) else Color.White
     
-    Column(
+    Box(
         modifier = modifier
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .height(150.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(width = 2.dp, color = borderColor, shape = RoundedCornerShape(16.dp))
+            .background(backgroundColor)
+            .clickable { onClick() }
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(if (isSelected) backgroundColor else Color(0xFF2F2F2F))
-                .border(
-                    border = if (isSelected) BorderStroke(2.dp, Color.White) else BorderStroke(0.dp, Color.Transparent),
-                    shape = CircleShape
-                )
-                .clickable(onClick = onClick),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(id = icon),
-                contentDescription = label,
-                modifier = Modifier.size(48.dp),
-                tint = if (isSelected) Color.Black else Color.White
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // You can add an icon here if needed
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Gender Text
+            Text(
+                text = gender.replaceFirstChar { it.uppercase() },
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color(0xFF8B5CF6) else Color.Black
             )
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = label,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = labelColor
-        )
     }
+}
+
+// Preview function for GenderScreen
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun GenderScreenPreview() {
+    // Mock ViewModel and callbacks for preview
+    val mockViewModel = object {
+        fun updateGender(gender: String) {}
+        val gender = object {
+            @Composable
+            fun collectAsState() = remember { mutableStateOf("male") }
+        }
+    }
+    
+    GenderScreen(
+        viewModel = mockViewModel as UserOnboardingViewModel,
+        onContinue = {}
+    )
 } 
