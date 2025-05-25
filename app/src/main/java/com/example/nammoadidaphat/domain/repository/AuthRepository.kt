@@ -1,5 +1,6 @@
 package com.example.nammoadidaphat.domain.repository
 
+import android.content.Intent
 import com.example.nammoadidaphat.domain.model.User
 import kotlinx.coroutines.flow.Flow
 
@@ -9,7 +10,7 @@ interface AuthRepository {
         email: String, 
         password: String, 
         fullName: String,
-        dateOfBirth: String = "",
+        age: Int? = null,
         gender: String = "",
         height: Int? = null,
         weight: Float? = null,
@@ -21,4 +22,11 @@ interface AuthRepository {
     suspend fun updateUserProfile(user: User): Result<Unit>
     suspend fun getUserById(userId: String): Result<User>
     fun getCurrentUser(): Flow<User?>
+    
+    // Social login methods
+    fun getGoogleSignInIntent(): Intent
+    suspend fun handleGoogleSignInResult(data: Intent?): Result<User>
+    
+    fun getFacebookSignInIntent(): Intent
+    suspend fun handleFacebookSignInResult(data: Intent?): Result<User>
 } 

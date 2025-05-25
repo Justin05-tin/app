@@ -1,5 +1,6 @@
 package com.example.nammoadidaphat.presentation.viewmodel
 
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nammoadidaphat.domain.model.User
@@ -52,7 +53,7 @@ class AuthViewModel @Inject constructor(
         email: String, 
         password: String, 
         fullName: String,
-        dateOfBirth: String = "",
+        age: Int? = null,
         gender: String = "",
         height: Int? = null,
         weight: Float? = null,
@@ -65,7 +66,7 @@ class AuthViewModel @Inject constructor(
             email, 
             password, 
             fullName,
-            dateOfBirth,
+            age,
             gender,
             height,
             weight,
@@ -76,6 +77,58 @@ class AuthViewModel @Inject constructor(
             _authState.value = AuthState.Authenticated(user)
         }.onFailure { error ->
             _authState.value = AuthState.Error(error.message ?: "Registration failed")
+        }
+        return result
+    }
+    
+    fun getGoogleSignInIntent(): Intent {
+        return authRepository.getGoogleSignInIntent()
+    }
+    
+    suspend fun handleGoogleSignInResult(data: Intent?): Result<User> {
+        _authState.value = AuthState.Loading
+        
+        val result = authRepository.handleGoogleSignInResult(data)
+        result.onSuccess { user ->
+            _authState.value = AuthState.Authenticated(user)
+        }.onFailure { error ->
+            _authState.value = AuthState.Error(error.message ?: "Google authentication failed")
+        }
+        return result
+    }
+    
+    // For processing Google sign-in in MainActivity
+    fun handleGoogleSignInIntent(data: Intent?) {
+        viewModelScope.launch {
+            handleGoogleSignInResult(data)
+        }
+    }
+    
+    // Check if a user needs to be directed to onboarding
+    fun needsOnboarding(user: User?): Boolean {
+        if (user == null) return false
+        
+        // Check if essential onboarding fields are missing
+        return user.gender.isBlank() || 
+               user.age == null || 
+               user.height == null || 
+               user.weight == null || 
+               user.fitnessLevel.isBlank() ||
+               user.goals.isBlank()
+    }
+    
+    fun getFacebookSignInIntent(): Intent {
+        return authRepository.getFacebookSignInIntent()
+    }
+    
+    suspend fun handleFacebookSignInResult(data: Intent?): Result<User> {
+        _authState.value = AuthState.Loading
+        
+        val result = authRepository.handleFacebookSignInResult(data)
+        result.onSuccess { user ->
+            _authState.value = AuthState.Authenticated(user)
+        }.onFailure { error ->
+            _authState.value = AuthState.Error(error.message ?: "Facebook authentication failed")
         }
         return result
     }

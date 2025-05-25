@@ -32,6 +32,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -64,8 +65,12 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
 
+    // Logging
+    implementation("com.jakewharton.timber:timber:5.0.1")
+
     // DataStore Preferences
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.datastore:datastore-preferences-core:1.0.0")
 
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
@@ -109,6 +114,17 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // Accompanist libraries
+    implementation("com.google.accompanist:accompanist-pager:0.32.0")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+
+    // Google Auth
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    
+    // Facebook SDK
+    implementation("com.facebook.android:facebook-login:16.2.0")
+    implementation("com.facebook.android:facebook-android-sdk:16.2.0")
 }
 
 apply(plugin = "com.google.gms.google-services")
