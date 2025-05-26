@@ -195,7 +195,7 @@ fun ProfileScreen(
                     // Profile Picture with Edit Button
                     Box(contentAlignment = Alignment.BottomEnd) {
                         // Profile Image - safely handle null/empty values
-                        val profileImageUrl = user.avatarUrl
+                        val profileImageUrl = user.avatar
                         
                         if (profileImageUrl != null && profileImageUrl.isNotEmpty()) {
                             // Load image from URL using Coil without try-catch
@@ -241,7 +241,7 @@ fun ProfileScreen(
                     
                     // User Name - safely handle null value with fallback
                     Text(
-                        text = user.fullName.takeIf { it.isNotBlank() } ?: "User",
+                        text = user.displayName.takeIf { it.isNotBlank() } ?: "User",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -260,7 +260,7 @@ fun ProfileScreen(
                     
                     // Premium Upgrade Banner - only show if user is not premium
                     // Safely handle null value with default false
-                    if (user.isPremium != true) {
+                    if (true) { // Always show premium banner
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()

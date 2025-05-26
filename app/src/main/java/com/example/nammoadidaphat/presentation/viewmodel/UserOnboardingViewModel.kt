@@ -91,7 +91,7 @@ class UserOnboardingViewModel @Inject constructor(
             age = _age.value,
             weight = _weight.value,
             height = _height.value,
-            goals = _goal.value,
+            goals = listOf(_goal.value),
             fitnessLevel = _fitnessLevel.value
         )
         

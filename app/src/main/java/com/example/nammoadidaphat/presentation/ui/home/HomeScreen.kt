@@ -171,7 +171,7 @@ fun HomeScreen(
                 
                 // Greeting with user name
                 Text(
-                    text = "Morning, ${currentUser?.fullName?.split(" ")?.firstOrNull() ?: "User"} 👋",
+                    text = "Morning, ${currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User"} 👋",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground

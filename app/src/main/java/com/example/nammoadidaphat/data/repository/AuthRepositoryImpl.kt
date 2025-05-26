@@ -22,6 +22,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -76,20 +77,19 @@ class AuthRepositoryImpl @Inject constructor(
         val user = result.user
         if (user != null) {
             // Update last login timestamp
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            val timestamp = dateFormat.format(Date())
+            val timestamp = Timestamp.now()
             
             // Update the user's document in Firestore
             val userDoc = usersCollection.document(user.uid).get().await()
             if (userDoc.exists()) {
-                usersCollection.document(user.uid).update("updated_at", timestamp).await()
+                usersCollection.document(user.uid).update("updatedAt", timestamp).await()
             } else {
                 // Create a basic user document if it doesn't exist
                 val basicUserData = User(
-                    userId = user.uid,
+                    id = user.uid,
                     email = email,
-                    fullName = user.displayName ?: "",
-                    avatarUrl = user.photoUrl?.toString() ?: "",
+                    displayName = user.displayName ?: "",
+                    avatar = user.photoUrl?.toString() ?: "",
                     createdAt = timestamp,
                     updatedAt = timestamp,
                     authProvider = "password"
@@ -122,22 +122,19 @@ class AuthRepositoryImpl @Inject constructor(
         val result = auth.createUserWithEmailAndPassword(email, password).await()
         val user = result.user
         if (user != null) {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            val timestamp = dateFormat.format(Date())
+            val timestamp = Timestamp.now()
             
             val userData = User(
-                userId = user.uid,
+                id = user.uid,
                 email = email,
-                passwordHash = "", // Firebase Auth handles this
-                fullName = fullName,
-                avatarUrl = "",
+                displayName = fullName,
+                avatar = "",
                 age = age,
                 gender = gender,
                 height = height,
                 weight = weight,
                 fitnessLevel = fitnessLevel,
-                goals = goals,
-                isPremium = false,
+                goals = listOf(goals), // Convert string to list
                 createdAt = timestamp,
                 updatedAt = timestamp
             )
@@ -179,9 +176,9 @@ class AuthRepositoryImpl @Inject constructor(
     
     override suspend fun updateUserProfile(user: User): Result<Unit> = try {
         val updates = user.toMap().toMutableMap()
-        updates["updated_at"] = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+        updates["updatedAt"] = Timestamp.now()
         
-        usersCollection.document(user.userId).update(updates).await()
+        usersCollection.document(user.id).update(updates).await()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)
@@ -220,16 +217,15 @@ class AuthRepositoryImpl @Inject constructor(
                                     trySend(userData)
                                 } else {
                                     // Create basic profile if Firestore data doesn't exist
-                                    val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                                    val timestamp = dateFormat.format(Date())
+                                    val timestamp = Timestamp.now()
                                     
                                     val providerId = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
                                     
                                     val userData = User(
-                                        userId = firebaseUser.uid,
+                                        id = firebaseUser.uid,
                                         email = firebaseUser.email ?: "",
-                                        fullName = firebaseUser.displayName ?: "",
-                                        avatarUrl = firebaseUser.photoUrl?.toString() ?: "",
+                                        displayName = firebaseUser.displayName ?: "",
+                                        avatar = firebaseUser.photoUrl?.toString() ?: "",
                                         createdAt = timestamp,
                                         updatedAt = timestamp,
                                         authProvider = providerId
@@ -308,7 +304,7 @@ class AuthRepositoryImpl @Inject constructor(
                 val userData = createOrUpdateSocialUserProfile(
                     firebaseUser = user,
                     providerId = "google.com",
-                    fullName = account.displayName ?: "",
+                    displayName = account.displayName ?: "",
                     email = account.email ?: "",
                     photoUrl = account.photoUrl?.toString() ?: ""
                 )
@@ -350,7 +346,7 @@ class AuthRepositoryImpl @Inject constructor(
                                 val userData = createOrUpdateSocialUserProfile(
                                     firebaseUser = firebaseUser,
                                     providerId = "facebook.com",
-                                    fullName = firebaseUser.displayName ?: "",
+                                    displayName = firebaseUser.displayName ?: "",
                                     email = firebaseUser.email ?: "",
                                     photoUrl = firebaseUser.photoUrl?.toString() ?: ""
                                 )
@@ -397,12 +393,11 @@ class AuthRepositoryImpl @Inject constructor(
     private suspend fun createOrUpdateSocialUserProfile(
         firebaseUser: FirebaseUser,
         providerId: String,
-        fullName: String,
+        displayName: String,
         email: String,
         photoUrl: String
     ): User {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val timestamp = dateFormat.format(Date())
+        val timestamp = Timestamp.now()
         
         // Check if user exists
         val userDoc = usersCollection.document(firebaseUser.uid).get().await()
@@ -410,9 +405,9 @@ class AuthRepositoryImpl @Inject constructor(
         return if (userDoc.exists()) {
             // Update existing user
             val updates = mapOf(
-                "updated_at" to timestamp,
+                "updatedAt" to timestamp,
                 "email" to email,
-                "avatar_url" to photoUrl
+                "avatar" to photoUrl
             )
             
             usersCollection.document(firebaseUser.uid).update(updates).await()
@@ -422,12 +417,10 @@ class AuthRepositoryImpl @Inject constructor(
         } else {
             // Create new user
             val userData = User(
-                userId = firebaseUser.uid,
+                id = firebaseUser.uid,
                 email = email,
-                passwordHash = "", // Not used for social logins
-                fullName = fullName,
-                avatarUrl = photoUrl,
-                isPremium = false,
+                displayName = displayName,
+                avatar = photoUrl,
                 createdAt = timestamp,
                 updatedAt = timestamp,
                 authProvider = providerId
@@ -460,15 +453,14 @@ class AuthRepositoryImpl @Inject constructor(
                                 continuation.resume(userData)
                             } else {
                                 // If user exists in Auth but not in Firestore, create a basic record
-                                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                                val timestamp = dateFormat.format(Date())
+                                val timestamp = Timestamp.now()
                                 
                                 val currentUser = auth.currentUser
                                 val userData = User(
-                                    userId = userId,
+                                    id = userId,
                                     email = currentUser?.email ?: "",
-                                    fullName = currentUser?.displayName ?: "",
-                                    avatarUrl = currentUser?.photoUrl?.toString() ?: "",
+                                    displayName = currentUser?.displayName ?: "",
+                                    avatar = currentUser?.photoUrl?.toString() ?: "",
                                     createdAt = timestamp,
                                     updatedAt = timestamp,
                                     authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
@@ -497,9 +489,9 @@ class AuthRepositoryImpl @Inject constructor(
                             continuation.resume(basicUser)
                         }
                     }
-                    .addOnFailureListener { error ->
-                        Timber.e(error, "Failed to get user document")
-                        // Return basic user object instead of throwing exception
+                    .addOnFailureListener { exception ->
+                        Timber.e(exception, "Failed to get user document")
+                        // Return basic user data instead of failing
                         val currentUser = auth.currentUser
                         val basicUser = User.createMinimalUser(
                             userId = userId,
@@ -510,13 +502,13 @@ class AuthRepositoryImpl @Inject constructor(
                     }
             } catch (e: Exception) {
                 Timber.e(e, "Unexpected error in getUserFromFirestore")
-                // Handle any unexpected exceptions by returning a basic user
+                // Return basic user data instead of failing
                 val currentUser = auth.currentUser
                 val basicUser = User.createMinimalUser(
                     userId = userId,
                     email = currentUser?.email ?: "",
                     authProvider = currentUser?.providerData?.firstOrNull()?.providerId ?: "password"
-                ) 
+                )
                 continuation.resume(basicUser)
             }
         }

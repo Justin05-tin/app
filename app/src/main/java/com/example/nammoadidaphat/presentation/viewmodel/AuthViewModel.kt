@@ -114,7 +114,7 @@ class AuthViewModel @Inject constructor(
                user.height == null || 
                user.weight == null || 
                user.fitnessLevel.isBlank() ||
-               user.goals.isBlank()
+               user.goals.isEmpty()
     }
     
     fun getFacebookSignInIntent(): Intent {

@@ -3,12 +3,16 @@ package com.example.nammoadidaphat.domain.model
 import com.google.firebase.Timestamp
 
 data class UserProgress(
-    val progress_id: String = "",
-    val user_id: String = "",
-    val date: Timestamp? = null,
-    val weight: Float = 0f,
-    val body_measurements: Map<String, Float> = emptyMap(),
-    val photos: List<String> = emptyList(),
+    val id: String = "",
+    val userId: String = "",
+    val levelId: String = "",
+    val exerciseId: String = "",
+    val completionDate: Timestamp? = null,
+    val duration: Int = 0,
+    val repsCompleted: Int = 0,
+    val setsCompleted: Int = 0,
+    val caloriesBurned: Int = 0,
+    val difficulty: String = "",
     val notes: String = "",
-    val created_at: Timestamp? = null
+    val createdAt: Timestamp? = null
 ) 
