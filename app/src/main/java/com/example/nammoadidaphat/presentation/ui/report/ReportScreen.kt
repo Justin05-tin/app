@@ -27,6 +27,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,11 +37,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.nammoadidaphat.R
+import com.example.nammoadidaphat.domain.model.User
+import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 import com.example.nammoadidaphat.ui.theme.PrimaryColor
+import kotlin.math.pow
+import kotlin.math.round
 
 @Composable
-fun ReportScreen() {
+fun ReportScreen(
+    authViewModel: AuthViewModel = hiltViewModel()
+) {
+    val currentUser by authViewModel.currentUser.collectAsState()
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -129,34 +140,39 @@ fun ReportScreen() {
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    // Weight display from user data
                     BodyMetricRow(
                         icon = R.drawable.ic_weight,
                         label = "Trọng Lượng",
-                        value = "70 kg",
+                        value = formatWeight(currentUser?.weight),
                         iconTint = Color(0xFF2196F3)
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    // Height display from user data
                     BodyMetricRow(
                         icon = R.drawable.ic_height,
                         label = "Chiều cao",
-                        value = "175 cm",
+                        value = formatHeight(currentUser?.height),
                         iconTint = Color(0xFF2196F3)
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Calculate and display BMI
+                    val bmiData = calculateBMI(currentUser)
                     
                     BodyMetricRow(
                         icon = R.drawable.ic_bmi,
                         label = "BMI",
-                        value = "22.9 (Bình Thường)",
+                        value = bmiData.displayText,
                         iconTint = Color(0xFF2196F3)
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // BMI indicator
+                    // BMI indicator with dynamic position based on BMI value
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -165,7 +181,7 @@ fun ReportScreen() {
                     ) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(0.5f) // Position at midpoint (normal BMI)
+                                .fillMaxWidth(bmiData.indicatorPosition)
                                 .height(8.dp)
                                 .background(
                                     brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
@@ -348,4 +364,65 @@ fun BodyMetricRow(
             color = MaterialTheme.colorScheme.onSurface
         )
     }
+}
+
+// Helper function to format weight
+private fun formatWeight(weight: Float?): String {
+    return if (weight != null) {
+        "$weight kg"
+    } else {
+        "-- kg"
+    }
+}
+
+// Helper function to format height
+private fun formatHeight(height: Int?): String {
+    return if (height != null) {
+        "$height cm"
+    } else {
+        "-- cm"
+    }
+}
+
+// Data class to hold BMI calculation results
+data class BMIData(
+    val bmiValue: Float,
+    val category: String,
+    val displayText: String,
+    val indicatorPosition: Float
+)
+
+// Function to calculate BMI from user data
+private fun calculateBMI(user: User?): BMIData {
+    val height = user?.height
+    val weight = user?.weight
+    
+    if (height == null || weight == null || height <= 0 || weight <= 0) {
+        return BMIData(
+            bmiValue = 0f,
+            category = "Không xác định",
+            displayText = "-- (Không xác định)",
+            indicatorPosition = 0.5f
+        )
+    }
+    
+    // BMI formula: weight (kg) / (height (m))²
+    val heightInMeters = height / 100f
+    val bmi = weight / (heightInMeters.pow(2))
+    val roundedBmi = round(bmi * 10) / 10
+    
+    // Determine BMI category
+    val (category, position) = when {
+        bmi < 18.5 -> "Thiếu cân" to 0.2f
+        bmi < 25 -> "Bình Thường" to 0.5f
+        bmi < 30 -> "Thừa cân" to 0.7f
+        else -> "Béo phì" to 0.9f
+    }
+    
+    return BMIData(
+        bmiValue = roundedBmi,
+        category = category,
+        displayText = "$roundedBmi ($category)",
+        indicatorPosition = position
+    )
 } 
