@@ -13,7 +13,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
-import com.example.nammoadidaphat.presentation.ui.workout.WorkoutScreen
+import com.example.nammoadidaphat.presentation.ui.workout.ExerciseScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
@@ -84,7 +84,7 @@ fun BottomNavRoot(
                 HomeScreen(navController = mainNavController, authViewModel = authViewModel) 
             }
             composable(BottomNavScreen.Workout.route) { 
-                WorkoutScreen() 
+                ExerciseScreen(navController = mainNavController, authViewModel = authViewModel) 
             }
             composable(BottomNavScreen.Report.route) { 
                 ReportScreen() 
