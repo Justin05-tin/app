@@ -18,6 +18,7 @@ import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
+import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,13 +31,28 @@ fun BottomNavRoot(
     
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.background
+            ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
                 items.forEach { screen ->
                     NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
-                        label = { Text(screen.title) },
+                        icon = { Icon(
+                            imageVector = screen.icon, 
+                            contentDescription = screen.title,
+                            tint = if (currentRoute == screen.route) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        ) },
+                        label = { Text(
+                            text = screen.title,
+                            color = if (currentRoute == screen.route) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        ) },
                         selected = currentRoute == screen.route,
                         onClick = {
                             if (currentRoute != screen.route) {
@@ -46,7 +62,14 @@ fun BottomNavRoot(
                                     restoreState = true
                                 }
                             }
-                        }
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                            indicatorColor = MaterialTheme.colorScheme.background
+                        )
                     )
                 }
             }
@@ -68,9 +91,11 @@ fun BottomNavRoot(
             }
             composable(BottomNavScreen.Profile.route) { 
                 val profileViewModel = hiltViewModel<ProfileViewModel>()
+                val themeViewModel = hiltViewModel<ThemeViewModel>()
                 ProfileScreen(
                     navController = mainNavController,
-                    viewModel = profileViewModel
+                    viewModel = profileViewModel,
+                    themeViewModel = themeViewModel
                 ) 
             }
         }

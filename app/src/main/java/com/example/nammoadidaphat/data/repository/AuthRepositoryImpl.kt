@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.app.Activity
 import androidx.activity.result.ActivityResultLauncher
+import com.example.nammoadidaphat.R
 import com.example.nammoadidaphat.domain.model.User
 import com.example.nammoadidaphat.domain.repository.AuthRepository
 import com.facebook.CallbackManager
@@ -49,12 +50,18 @@ class AuthRepositoryImpl @Inject constructor(
 
     private val usersCollection = firestore.collection("users")
     
+    // Web Client ID cho Google Sign-In
+    private val webClientId = "1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com"
+    
     // Google sign in
     private val googleSignInClient: GoogleSignInClient by lazy {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com")
+            .requestIdToken(webClientId)
             .requestEmail()
             .build()
+        
+        Timber.d("Using Google Sign-In web client ID: $webClientId")
+        
         GoogleSignIn.getClient(context, gso)
     }
     

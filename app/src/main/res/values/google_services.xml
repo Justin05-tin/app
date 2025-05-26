@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Google Sign-In Configuration -->
+    <string name="web_client_id">1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com</string>
+    
+    <!-- SHA-1 Fingerprints 
+    Debug SHA-1: 73:80:8f:84:fb:a8:2d:4a:dc:c9:ab:7c:ce:f4:18:3f:15:f3:02:ae
+    
+    Bạn cần đảm bảo đã thêm SHA-1 này vào Firebase Console:
+    1. Vào Firebase Console > Project Settings > Your Apps > SHA certificate fingerprints
+    2. Thêm SHA-1 fingerprint trên
+    3. Tải lại file google-services.json mới
+    4. Thay thế vào thư mục app/
+    
+    Các lỗi thường gặp với đăng nhập Google:
+    1. SHA-1 không đúng hoặc thiếu trong Firebase Console
+    2. Google Play Services không cập nhật
+    3. Sử dụng Web Client ID không đúng
+    -->
+</resources> 

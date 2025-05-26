@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -30,14 +30,17 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import androidx.compose.ui.window.Dialog
 import com.example.nammoadidaphat.domain.model.User
+import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    viewModel: ProfileViewModel = hiltViewModel()
+    viewModel: ProfileViewModel = hiltViewModel(),
+    themeViewModel: ThemeViewModel = hiltViewModel()
 ) {
     // Get current user state from ViewModel
     val uiState by viewModel.uiState.collectAsState(initial = ProfileUiState(isLoading = true))
+    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState(initial = false)
     val context = LocalContext.current
     
     // State for logout dialog
@@ -60,13 +63,13 @@ fun ProfileScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         if (uiState.isLoading) {
             // Only show loading indicator when loading
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
-                color = Color(0xFF7B50E8)
+                color = MaterialTheme.colorScheme.primary
             )
         } else if (uiState.error != null) {
             // Show error message if there's an error
@@ -90,7 +93,8 @@ fun ProfileScreen(
                     text = "Something went wrong",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -98,7 +102,7 @@ fun ProfileScreen(
                 Text(
                     text = uiState.error ?: "Failed to load profile",
                     fontSize = 14.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
                 
@@ -107,8 +111,8 @@ fun ProfileScreen(
                 Button(
                     onClick = { viewModel.getCurrentUser() },
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0xFF7B50E8),
-                        contentColor = Color.White
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 ) {
                     Text("Try Again")
@@ -122,7 +126,7 @@ fun ProfileScreen(
                         popUpTo("main_nav_graph") { inclusive = true }
                     }
                 }) {
-                    Text("Log Out", color = Color(0xFF7B50E8))
+                    Text("Log Out", color = MaterialTheme.colorScheme.primary)
                 }
             }
         } else {
@@ -166,7 +170,8 @@ fun ProfileScreen(
                         Text(
                             text = "Profile",
                             fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
                     
@@ -238,7 +243,8 @@ fun ProfileScreen(
                     Text(
                         text = user.fullName.takeIf { it.isNotBlank() } ?: "User",
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     
                     Spacer(modifier = Modifier.height(4.dp))
@@ -247,7 +253,7 @@ fun ProfileScreen(
                     Text(
                         text = user.email.takeIf { it.isNotBlank() } ?: "",
                         fontSize = 16.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -259,9 +265,10 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { viewModel.upgradeToProVersion() },
-                            backgroundColor = Color(0xFF7B50E8),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = 0.dp
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFF7B50E8)
+                            ),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -330,7 +337,7 @@ fun ProfileScreen(
                             onClick = { viewModel.navigateToEditProfile(navController) }
                         )
                         
-                        Divider(color = Color.LightGray.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                         
                         // Notifications
                         MenuRow(
@@ -339,7 +346,7 @@ fun ProfileScreen(
                             onClick = { viewModel.navigateToNotifications(navController) }
                         )
                         
-                        Divider(color = Color.LightGray.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                         
                         // Security
                         MenuRow(
@@ -348,7 +355,7 @@ fun ProfileScreen(
                             onClick = { viewModel.navigateToSecurity(navController) }
                         )
                         
-                        Divider(color = Color.LightGray.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                         
                         // Help
                         MenuRow(
@@ -357,7 +364,7 @@ fun ProfileScreen(
                             onClick = { viewModel.navigateToHelp(navController) }
                         )
                         
-                        Divider(color = Color.LightGray.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                         
                         // Dark Theme
                         Row(
@@ -373,7 +380,7 @@ fun ProfileScreen(
                                 Icon(
                                     imageVector = Icons.Filled.Refresh,
                                     contentDescription = "Dark Theme",
-                                    tint = Color(0xFF333333),
+                                    tint = MaterialTheme.colorScheme.onBackground,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 
@@ -382,23 +389,25 @@ fun ProfileScreen(
                                 Text(
                                     text = "Dark Theme",
                                     fontSize = 16.sp,
-                                    color = Color(0xFF333333)
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
                             }
                             
                             Switch(
-                                checked = uiState.isDarkTheme,
-                                onCheckedChange = { viewModel.toggleDarkTheme() },
+                                checked = isDarkTheme,
+                                onCheckedChange = { themeViewModel.toggleDarkTheme() },
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = Color.White,
                                     checkedTrackColor = Color(0xFF7B50E8),
+                                    checkedIconColor = Color.White,
                                     uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = Color.LightGray
+                                    uncheckedTrackColor = Color.LightGray,
+                                    uncheckedIconColor = Color.LightGray
                                 )
                             )
                         }
                         
-                        Divider(color = Color.LightGray.copy(alpha = 0.5f))
+                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                         
                         // Logout
                         Row(
@@ -437,7 +446,7 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White)
+                        .background(MaterialTheme.colorScheme.surface)
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -454,7 +463,7 @@ fun ProfileScreen(
                     Text(
                         text = "Are you sure you want to log out?",
                         fontSize = 16.sp,
-                        color = Color.DarkGray,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -475,7 +484,7 @@ fun ProfileScreen(
                             .fillMaxWidth()
                             .height(56.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFF7B50E8),
+                            containerColor = Color(0xFF7B50E8),
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(28.dp)
@@ -529,7 +538,7 @@ fun MenuRow(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = Color(0xFF333333),
+            tint = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.size(24.dp)
         )
         
@@ -538,7 +547,7 @@ fun MenuRow(
         Text(
             text = title,
             fontSize = 16.sp,
-            color = Color(0xFF333333)
+            color = MaterialTheme.colorScheme.onBackground
         )
     }
 }

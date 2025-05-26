@@ -10,20 +10,24 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 
-// Custom color schemes that have no purple
+// Custom color schemes
 private val DarkColorScheme = darkColorScheme(
-    primary = AppYellow,
+    primary = PrimaryColor,
     secondary = LightBlue,
     tertiary = MediumGray,
     background = DarkBlue,
     surface = DarkBlue,
-    onPrimary = Color.Black,
+    onPrimary = Color.White,
     onSecondary = Color.Black,
     onTertiary = Color.White,
     onBackground = Color.White,
@@ -31,12 +35,12 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = AppYellow,
+    primary = PrimaryColor,
     secondary = LightBlue,
     tertiary = MediumGray,
     background = Color.White,
     surface = Color.White,
-    onPrimary = Color.Black,
+    onPrimary = Color.White,
     onSecondary = Color.White,
     onTertiary = Color.White,
     onBackground = DarkBlue,
@@ -70,6 +74,20 @@ fun PetPackLoginTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        content = content
+    )
+}
+
+@Composable
+fun AppTheme(
+    content: @Composable () -> Unit
+) {
+    val themeViewModel: ThemeViewModel = hiltViewModel()
+    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState(initial = false)
+    
+    PetPackLoginTheme(
+        darkTheme = isDarkTheme,
+        dynamicColor = false,
         content = content
     )
 }
