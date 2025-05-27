@@ -7,19 +7,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
 import com.example.nammoadidaphat.presentation.ui.workout.ExerciseScreen
+import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelsScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.ExerciseViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,17 +88,35 @@ fun BottomNavRoot(
             composable(BottomNavScreen.Overview.route) { 
                 HomeScreen(navController = mainNavController, authViewModel = authViewModel) 
             }
+            
             composable(BottomNavScreen.Workout.route) { 
                 val exerciseViewModel = hiltViewModel<ExerciseViewModel>()
                 ExerciseScreen(
-                    navController = mainNavController, 
+                    navController = navController, 
                     authViewModel = authViewModel,
                     exerciseViewModel = exerciseViewModel
                 ) 
             }
+            
+            composable(
+                route = "workout_levels/{workoutTypeId}",
+                arguments = listOf(
+                    navArgument("workoutTypeId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val workoutTypeId = backStackEntry.arguments?.getString("workoutTypeId") ?: ""
+                val workoutLevelsViewModel = hiltViewModel<WorkoutLevelsViewModel>()
+                WorkoutLevelsScreen(
+                    navController = navController,
+                    viewModel = workoutLevelsViewModel,
+                    workoutTypeId = workoutTypeId
+                )
+            }
+            
             composable(BottomNavScreen.Report.route) { 
                 ReportScreen() 
             }
+            
             composable(BottomNavScreen.Profile.route) { 
                 val profileViewModel = hiltViewModel<ProfileViewModel>()
                 val themeViewModel = hiltViewModel<ThemeViewModel>()

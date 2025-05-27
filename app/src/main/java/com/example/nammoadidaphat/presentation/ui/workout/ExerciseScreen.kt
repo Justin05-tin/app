@@ -137,7 +137,12 @@ fun ExerciseScreen(
                                 contentPadding = PaddingValues(end = 8.dp)
                             ) {
                                 items(workoutTypes) { workoutType ->
-                                    WorkoutTypeCard(workoutType = workoutType)
+                                    WorkoutTypeCard(
+                                        workoutType = workoutType,
+                                        onClick = {
+                                            navController.navigate("workout_levels/${workoutType.id}")
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -161,12 +166,15 @@ fun CategoryHeader(title: String) {
 }
 
 @Composable
-fun WorkoutTypeCard(workoutType: WorkoutType) {
+fun WorkoutTypeCard(
+    workoutType: WorkoutType,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .width(240.dp)
             .height(180.dp)
-            .clickable { /* Handle workout type click */ },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent

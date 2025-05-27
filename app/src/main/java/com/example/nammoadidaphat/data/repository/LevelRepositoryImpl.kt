@@ -20,7 +20,7 @@ class LevelRepositoryImpl @Inject constructor(
     
     override suspend fun getAllLevels(): Result<List<Level>> = try {
         val snapshot = levelsCollection
-            .orderBy("rank", Query.Direction.ASCENDING)
+            .orderBy("order", Query.Direction.ASCENDING)
             .get()
             .await()
             
@@ -43,6 +43,38 @@ class LevelRepositoryImpl @Inject constructor(
         Result.success(levels)
     } catch (e: Exception) {
         Timber.e(e, "Error getting all levels")
+        Result.failure(e)
+    }
+
+    override suspend fun getLevelsForWorkoutType(workoutTypeId: String): Result<List<Level>> = try {
+        Timber.d("Getting levels for workout type: $workoutTypeId")
+        val snapshot = levelsCollection
+            .whereEqualTo("workoutTypeId", workoutTypeId)
+            .orderBy("order", Query.Direction.ASCENDING)
+            .get()
+            .await()
+            
+        val levels = snapshot.documents.mapNotNull { doc ->
+            try {
+                val data = doc.data
+                if (data != null) {
+                    // Add the document ID to the map before conversion
+                    val dataWithId = data.toMutableMap().apply {
+                        put("id", doc.id)
+                    }
+                    Timber.d("Level data: $dataWithId")
+                    Level.fromMap(dataWithId)
+                } else null
+            } catch (e: Exception) {
+                Timber.e(e, "Error mapping level document ${doc.id}")
+                null
+            }
+        }
+        
+        Timber.d("Found ${levels.size} levels for workout type $workoutTypeId")
+        Result.success(levels)
+    } catch (e: Exception) {
+        Timber.e(e, "Error getting levels for workout type: $workoutTypeId")
         Result.failure(e)
     }
 
@@ -115,7 +147,7 @@ class LevelRepositoryImpl @Inject constructor(
 
     override fun getLevels(): Flow<List<Level>> = callbackFlow {
         val listenerRegistration = levelsCollection
-            .orderBy("rank", Query.Direction.ASCENDING)
+            .orderBy("order", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     Timber.e(error, "Error listening for level updates")
