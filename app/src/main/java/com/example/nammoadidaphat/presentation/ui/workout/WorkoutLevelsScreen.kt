@@ -48,6 +48,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.nammoadidaphat.R
 import com.example.nammoadidaphat.domain.model.Level
+import com.example.nammoadidaphat.domain.model.WorkoutType
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelsViewModel
 
 @Composable
@@ -127,7 +128,10 @@ fun WorkoutLevelsScreen(
                     contentPadding = PaddingValues(vertical = 16.dp)
                 ) {
                     items(levels) { level ->
-                        LevelCard(level = level)
+                        LevelCard(
+                            level = level,
+                            workoutType = workoutType
+                        )
                     }
                 }
             }
@@ -160,7 +164,10 @@ fun WorkoutLevelsScreen(
 }
 
 @Composable
-fun LevelCard(level: Level) {
+fun LevelCard(
+    level: Level,
+    workoutType: WorkoutType?
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -179,14 +186,14 @@ fun LevelCard(level: Level) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Level image
+            // Level image - use parent workout type's image
             Card(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.size(80.dp)
             ) {
                 Image(
                     painter = rememberAsyncImagePainter(
-                        model = if (level.imageUrl.isNotBlank()) level.imageUrl else R.drawable.ic_fitness
+                        model = if (workoutType?.imageUrl?.isNotBlank() == true) workoutType.imageUrl else R.drawable.ic_fitness
                     ),
                     contentDescription = level.name,
                     contentScale = ContentScale.Crop,
