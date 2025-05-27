@@ -18,6 +18,7 @@ import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
 import com.example.nammoadidaphat.presentation.ui.workout.ExerciseScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelDetailScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelsScreen
+import com.example.nammoadidaphat.presentation.ui.workout.WorkoutSessionScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
@@ -26,6 +27,7 @@ import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.ExerciseViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelDetailViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelsViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.WorkoutSessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,6 +139,22 @@ fun BottomNavRoot(
                 WorkoutLevelDetailScreen(
                     navController = navController,
                     viewModel = workoutLevelDetailViewModel,
+                    levelId = levelId
+                )
+            }
+            
+            // Add route for workout session screen
+            composable(
+                route = "workout_session/{levelId}",
+                arguments = listOf(
+                    navArgument("levelId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
+                val workoutSessionViewModel = hiltViewModel<WorkoutSessionViewModel>()
+                WorkoutSessionScreen(
+                    navController = navController,
+                    viewModel = workoutSessionViewModel,
                     levelId = levelId
                 )
             }

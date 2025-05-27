@@ -160,7 +160,10 @@ fun WorkoutLevelDetailScreen(
                     
                     // Start button
                     Button(
-                        onClick = { /* Handle start workout click */ },
+                        onClick = { 
+                            // Navigate to workout session screen with the level ID
+                            navController.navigate("workout_session/${levelId}")
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 32.dp, vertical = 16.dp)
