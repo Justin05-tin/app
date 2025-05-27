@@ -2,8 +2,12 @@ package com.example.nammoadidaphat.di
 
 import android.content.Context
 import com.example.nammoadidaphat.data.repository.AuthRepositoryImpl
+import com.example.nammoadidaphat.data.repository.CategoryRepositoryImpl
 import com.example.nammoadidaphat.data.repository.UserPreferencesRepository
+import com.example.nammoadidaphat.data.repository.WorkoutTypeRepositoryImpl
 import com.example.nammoadidaphat.domain.repository.AuthRepository
+import com.example.nammoadidaphat.domain.repository.CategoryRepository
+import com.example.nammoadidaphat.domain.repository.WorkoutTypeRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Binds
@@ -23,6 +27,18 @@ abstract class AppModule {
     abstract fun bindAuthRepository(
         authRepositoryImpl: AuthRepositoryImpl
     ): AuthRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindCategoryRepository(
+        categoryRepositoryImpl: CategoryRepositoryImpl
+    ): CategoryRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindWorkoutTypeRepository(
+        workoutTypeRepositoryImpl: WorkoutTypeRepositoryImpl
+    ): WorkoutTypeRepository
 
     companion object {
         @Provides

@@ -25,143 +25,124 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.nammoadidaphat.R
+import com.example.nammoadidaphat.domain.model.Category
+import com.example.nammoadidaphat.domain.model.WorkoutType
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.ExerciseViewModel
 
 @Composable
 fun ExerciseScreen(
     navController: NavController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    exerciseViewModel: ExerciseViewModel
 ) {
-    // Data for different exercise categories
-    val beginnerExercises = listOf(
-        ExerciseItem("Mỗi sáng thức dậy", "Beginner", R.drawable.ic_fitness, 2),
-        ExerciseItem("Kéo dãn cơ thể", "Beginner", R.drawable.ic_yoga, 2)
-    )
+    // Collect state from view model
+    val categories by exerciseViewModel.categories.collectAsState()
+    val workoutTypesByCategory by exerciseViewModel.workoutTypesByCategory.collectAsState()
+    val isLoading by exerciseViewModel.isLoading.collectAsState()
+    val error by exerciseViewModel.error.collectAsState()
     
-    val calorieBurnExercises = listOf(
-        ExerciseItem("Cardio Toàn Thân", "Intermediate", R.drawable.ic_fitness, 2),
-        ExerciseItem("HIIT Đốt Calo", "Advanced", R.drawable.ic_fitness, 2)
-    )
-    
-    val bodyPartExercises = listOf(
-        ExerciseItem("Đôi Tay Khỏe", "Intermediate", R.drawable.ic_chest, 2),
-        ExerciseItem("Đôi Chân Khỏe", "Intermediate", R.drawable.ic_leg, 2)
-    )
-    
-    val movementExercises = listOf(
-        ExerciseItem("Yoga Cơ Bản", "Beginner", R.drawable.ic_yoga, 2),
-        ExerciseItem("Stretching", "Beginner", R.drawable.ic_yoga, 2)
-    )
+    // Trigger data loading when the screen is first displayed
+    LaunchedEffect(key1 = Unit) {
+        exerciseViewModel.loadData()
+    }
     
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Single scrollable LazyColumn for the entire screen
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 80.dp) // Add padding for bottom navigation
-        ) {
-            // Header
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Text(
-                    text = "Bài tập",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-            
-            // For Beginners Section
-            item {
-                CategoryHeader(title = "DÀNH CHO NGƯỜI MỚI")
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(end = 8.dp)
-                ) {
-                    items(beginnerExercises) { exercise ->
-                        ExerciseCard(exercise)
-                    }
+        // Show loading indicator
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = Color(0xFF8B5CF6)
+            )
+        }
+        
+        // Show error if exists
+        error?.let {
+            Text(
+                text = "Error: $it",
+                color = Color.Red,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp)
+            )
+        }
+        
+        // Show categories and workout types when loaded
+        if (!isLoading && error == null) {
+            // Single scrollable LazyColumn for the entire screen
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 80.dp) // Add padding for bottom navigation
+            ) {
+                // Header
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "Bài tập",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-            
-            // Quick Calorie Burn Section
-            item {
-                CategoryHeader(title = "ĐỐT CALO NHANH")
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(end = 8.dp)
-                ) {
-                    items(calorieBurnExercises) { exercise ->
-                        ExerciseCard(exercise)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-            
-            // Exercise by Body Part Section
-            item {
-                CategoryHeader(title = "TẬP THEO BỘ PHẬN")
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(end = 8.dp)
-                ) {
-                    items(bodyPartExercises) { exercise ->
-                        ExerciseCard(exercise)
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-            
-            // Movements Section
-            item {
-                CategoryHeader(title = "ĐỘNG TÁC")
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(end = 8.dp)
-                ) {
-                    items(movementExercises) { exercise ->
-                        ExerciseCard(exercise)
+                // Display each category and its workout types
+                categories.forEach { category ->
+                    item {
+                        CategoryHeader(title = "${category.name.uppercase()}")
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Get workout types for this category
+                        val workoutTypes = workoutTypesByCategory[category.id] ?: emptyList()
+                        
+                        if (workoutTypes.isEmpty()) {
+                            Text(
+                                text = "Không có bài tập cho danh mục này (Category ID: ${category.id})",
+                                color = Color.Gray,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        } else {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                contentPadding = PaddingValues(end = 8.dp)
+                            ) {
+                                items(workoutTypes) { workoutType ->
+                                    WorkoutTypeCard(workoutType = workoutType)
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -180,12 +161,12 @@ fun CategoryHeader(title: String) {
 }
 
 @Composable
-fun ExerciseCard(exercise: ExerciseItem) {
+fun WorkoutTypeCard(workoutType: WorkoutType) {
     Card(
         modifier = Modifier
             .width(240.dp)
             .height(180.dp)
-            .clickable { /* Handle exercise click */ },
+            .clickable { /* Handle workout type click */ },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -195,10 +176,12 @@ fun ExerciseCard(exercise: ExerciseItem) {
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background image
+            // Background image using Coil for network images
             Image(
-                painter = painterResource(id = exercise.imageRes),
-                contentDescription = exercise.title,
+                painter = rememberAsyncImagePainter(
+                    model = if (workoutType.imageUrl.isNotBlank()) workoutType.imageUrl else R.drawable.ic_fitness
+                ),
+                contentDescription = workoutType.name,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -216,14 +199,14 @@ fun ExerciseCard(exercise: ExerciseItem) {
                     )
             )
             
-            // Exercise details at the bottom
+            // Workout type details at the bottom
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)
             ) {
                 Text(
-                    text = exercise.title,
+                    text = workoutType.name,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -232,23 +215,53 @@ fun ExerciseCard(exercise: ExerciseItem) {
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Rating stars
-                Row {
-                    repeat(exercise.rating) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFF7B50E8),
-                            modifier = Modifier.size(20.dp)
-                        )
+                // Description
+                if (workoutType.description.isNotBlank()) {
+                    Text(
+                        text = workoutType.description,
+                        fontSize = 14.sp,
+                        color = Color.LightGray,
+                        maxLines = 2
+                    )
+                }
+                
+                // Display additional information if available as badges
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Display difficulty if available
+                    workoutType.difficulty?.let { difficulty ->
+                        if (difficulty.isNotBlank()) {
+                            Text(
+                                text = difficulty,
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .background(
+                                        color = Color(0xFF8B5CF6).copy(alpha = 0.7f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
-                    repeat(5 - exercise.rating) {
-                        Icon(
-                            imageVector = Icons.Outlined.Star,
-                            contentDescription = "Rating",
-                            tint = Color(0xFF7B50E8),
-                            modifier = Modifier.size(20.dp)
-                        )
+                    
+                    // Display duration if available
+                    workoutType.duration?.let { duration ->
+                        if (duration.isNotBlank()) {
+                            Text(
+                                text = duration,
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                modifier = Modifier
+                                    .background(
+                                        color = Color(0xFF2DD4BF).copy(alpha = 0.7f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -269,11 +282,4 @@ fun ExerciseCard(exercise: ExerciseItem) {
             }
         }
     }
-}
-
-data class ExerciseItem(
-    val title: String,
-    val level: String,
-    val imageRes: Int,
-    val rating: Int // Rating from 1-5
-) 
+} 

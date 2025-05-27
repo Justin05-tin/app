@@ -16,7 +16,7 @@ class WorkoutTypeRepositoryImpl @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : WorkoutTypeRepository {
 
-    private val workoutTypesCollection = firestore.collection("workout_types")
+    private val workoutTypesCollection = firestore.collection("workoutTypes")
     
     override suspend fun getAllWorkoutTypes(): Result<List<WorkoutType>> = try {
         val snapshot = workoutTypesCollection
