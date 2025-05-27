@@ -73,7 +73,6 @@ fun WorkoutLevelsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -130,7 +129,8 @@ fun WorkoutLevelsScreen(
                     items(levels) { level ->
                         LevelCard(
                             level = level,
-                            workoutType = workoutType
+                            workoutType = workoutType,
+                            navController = navController
                         )
                     }
                 }
@@ -166,12 +166,16 @@ fun WorkoutLevelsScreen(
 @Composable
 fun LevelCard(
     level: Level,
-    workoutType: WorkoutType?
+    workoutType: WorkoutType?,
+    navController: NavController
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Handle level click */ },
+            .clickable { 
+                // Navigate to level detail screen
+                navController.navigate("workout_level_detail/${level.id}")
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

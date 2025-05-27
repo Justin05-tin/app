@@ -16,6 +16,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
 import com.example.nammoadidaphat.presentation.ui.workout.ExerciseScreen
+import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelDetailScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelsScreen
 import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
@@ -23,6 +24,7 @@ import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
 import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.ExerciseViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelDetailViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,6 +112,21 @@ fun BottomNavRoot(
                     navController = navController,
                     viewModel = workoutLevelsViewModel,
                     workoutTypeId = workoutTypeId
+                )
+            }
+            
+            composable(
+                route = "workout_level_detail/{levelId}",
+                arguments = listOf(
+                    navArgument("levelId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val levelId = backStackEntry.arguments?.getString("levelId") ?: ""
+                val workoutLevelDetailViewModel = hiltViewModel<WorkoutLevelDetailViewModel>()
+                WorkoutLevelDetailScreen(
+                    navController = navController,
+                    viewModel = workoutLevelDetailViewModel,
+                    levelId = levelId
                 )
             }
             

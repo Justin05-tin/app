@@ -3,11 +3,13 @@ package com.example.nammoadidaphat.di
 import android.content.Context
 import com.example.nammoadidaphat.data.repository.AuthRepositoryImpl
 import com.example.nammoadidaphat.data.repository.CategoryRepositoryImpl
+import com.example.nammoadidaphat.data.repository.ExerciseRepositoryImpl
 import com.example.nammoadidaphat.data.repository.LevelRepositoryImpl
 import com.example.nammoadidaphat.data.repository.UserPreferencesRepository
 import com.example.nammoadidaphat.data.repository.WorkoutTypeRepositoryImpl
 import com.example.nammoadidaphat.domain.repository.AuthRepository
 import com.example.nammoadidaphat.domain.repository.CategoryRepository
+import com.example.nammoadidaphat.domain.repository.ExerciseRepository
 import com.example.nammoadidaphat.domain.repository.LevelRepository
 import com.example.nammoadidaphat.domain.repository.WorkoutTypeRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -47,6 +49,12 @@ abstract class AppModule {
     abstract fun bindLevelRepository(
         levelRepositoryImpl: LevelRepositoryImpl
     ): LevelRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindExerciseRepository(
+        exerciseRepositoryImpl: ExerciseRepositoryImpl
+    ): ExerciseRepository
 
     companion object {
         @Provides

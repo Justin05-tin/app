@@ -96,7 +96,6 @@ fun ExerciseScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(bottom = 80.dp) // Add padding for bottom navigation
