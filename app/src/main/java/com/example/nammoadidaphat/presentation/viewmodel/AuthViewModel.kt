@@ -109,12 +109,13 @@ class AuthViewModel @Inject constructor(
         if (user == null) return false
         
         // Check if essential onboarding fields are missing
-        return user.gender.isBlank() || 
+        return user.displayName.isBlank() ||
+               user.gender.isBlank() || 
                user.age == null || 
                user.height == null || 
                user.weight == null || 
                user.fitnessLevel.isBlank() ||
-               user.goals.isBlank()
+               user.goals.isEmpty()
     }
     
     fun getFacebookSignInIntent(): Intent {

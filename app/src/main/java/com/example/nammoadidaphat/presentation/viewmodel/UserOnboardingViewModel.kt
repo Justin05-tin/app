@@ -20,6 +20,9 @@ class UserOnboardingViewModel @Inject constructor(
     private val _gender = MutableStateFlow<String>("")
     val gender: StateFlow<String> = _gender.asStateFlow()
     
+    private val _displayName = MutableStateFlow<String>("")
+    val displayName: StateFlow<String> = _displayName.asStateFlow()
+    
     private val _age = MutableStateFlow<Int?>(null)
     val age: StateFlow<Int?> = _age.asStateFlow()
     
@@ -59,6 +62,10 @@ class UserOnboardingViewModel @Inject constructor(
         _gender.value = gender
     }
     
+    fun updateDisplayName(name: String) {
+        _displayName.value = name
+    }
+    
     fun updateAge(age: Int) {
         _age.value = age
     }
@@ -83,28 +90,52 @@ class UserOnboardingViewModel @Inject constructor(
         _isLoading.value = true
         _error.value = null
         
-        val currentUser = _userData.value ?: return Result.failure(Exception("User not found"))
-        
-        // Update the user object with the collected data
-        val updatedUser = currentUser.copy(
-            gender = _gender.value,
-            age = _age.value,
-            weight = _weight.value,
-            height = _height.value,
-            goals = _goal.value,
-            fitnessLevel = _fitnessLevel.value
-        )
-        
-        val result = authRepository.updateUserProfile(updatedUser)
-        
-        result.onSuccess {
-            _userData.value = updatedUser
-        }.onFailure { error ->
-            _error.value = error.message
+        val currentUser = _userData.value
+        if (currentUser == null) {
+            _error.value = "User not found"
+            _isLoading.value = false
+            return Result.failure(Exception("User not found"))
         }
         
-        _isLoading.value = false
-        return result
+        if (currentUser.id.isBlank()) {
+            _error.value = "User ID is blank"
+            _isLoading.value = false
+            return Result.failure(Exception("User ID is blank"))
+        }
+        
+        return try {
+            // Update the user object with the collected data
+            val updatedUser = currentUser.copy(
+                gender = _gender.value,
+                displayName = _displayName.value,
+                age = _age.value,
+                weight = _weight.value,
+                height = _height.value,
+                goals = listOf(_goal.value),
+                fitnessLevel = _fitnessLevel.value
+            )
+            
+            // Log the data before saving - for debugging
+            android.util.Log.d("UserOnboardingViewModel", "Saving user data: ${updatedUser.id}, name: ${updatedUser.displayName}")
+            
+            val result = authRepository.updateUserProfile(updatedUser)
+            
+            result.onSuccess {
+                _userData.value = updatedUser
+                android.util.Log.d("UserOnboardingViewModel", "Successfully saved user data")
+            }.onFailure { error ->
+                _error.value = error.message
+                android.util.Log.e("UserOnboardingViewModel", "Failed to save user data: ${error.message}")
+            }
+            
+            _isLoading.value = false
+            result
+        } catch (e: Exception) {
+            android.util.Log.e("UserOnboardingViewModel", "Exception when saving user data: ${e.message}")
+            _error.value = e.message ?: "Error updating user profile"
+            _isLoading.value = false
+            Result.failure(e)
+        }
     }
     
     fun clearError() {

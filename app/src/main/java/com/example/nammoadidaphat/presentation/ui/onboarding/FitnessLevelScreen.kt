@@ -36,6 +36,7 @@ import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun FitnessLevelScreen(
@@ -136,7 +137,16 @@ fun FitnessLevelScreen(
                 
                 // Finish button
                 Button(
-                    onClick = onComplete,
+                    onClick = {
+                        // First save user data to Firestore
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val result = viewModel.saveUserOnboardingData()
+                            // Then complete onboarding on main thread
+                            withContext(Dispatchers.Main) {
+                                onComplete()
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),

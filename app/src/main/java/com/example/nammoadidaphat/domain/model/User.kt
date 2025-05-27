@@ -1,49 +1,49 @@
 package com.example.nammoadidaphat.domain.model
 
+import com.google.firebase.Timestamp
+
 data class User(
-    val userId: String = "",
+    val id: String = "",
     val email: String = "",
-    val passwordHash: String = "",
-    val fullName: String = "",
-    val avatarUrl: String = "",
+    val displayName: String = "",
+    val avatar: String = "",
     val age: Int? = null,
     val gender: String = "",
     val height: Int? = null,
     val weight: Float? = null,
     val fitnessLevel: String = "",
-    val goals: String = "",
-    val isPremium: Boolean = false,
-    val createdAt: String = "",
-    val updatedAt: String = "",
-    val authProvider: String = "password" // Values: "password", "google.com", "facebook.com"
+    val goals: List<String> = emptyList(),
+    val preferences: Map<String, Any> = emptyMap(),
+    val createdAt: Timestamp? = null,
+    val updatedAt: Timestamp? = null,
+    val authProvider: String = "password" // "password", "google.com", "facebook.com"
 ) {
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun fromMap(map: Map<String, Any?>): User {
             return try {
                 User(
-                    userId = map["user_id"] as? String ?: "",
+                    id = map["id"] as? String ?: "",
                     email = map["email"] as? String ?: "",
-                    passwordHash = map["password_hash"] as? String ?: "",
-                    fullName = map["full_name"] as? String ?: "",
-                    avatarUrl = map["avatar_url"] as? String ?: "",
+                    displayName = map["displayName"] as? String ?: "",
+                    avatar = map["avatar"] as? String ?: "",
                     age = (map["age"] as? Long)?.toInt() ?: (map["age"] as? Int),
                     gender = map["gender"] as? String ?: "",
                     height = (map["height"] as? Long)?.toInt() ?: (map["height"] as? Int),
                     weight = (map["weight"] as? Double)?.toFloat() ?: (map["weight"] as? Float),
-                    fitnessLevel = map["fitness_level"] as? String ?: "",
-                    goals = map["goals"] as? String ?: "",
-                    isPremium = map["is_premium"] as? Boolean ?: false,
-                    createdAt = map["created_at"] as? String ?: "",
-                    updatedAt = map["updated_at"] as? String ?: "",
-                    authProvider = map["auth_provider"] as? String ?: "password"
+                    fitnessLevel = map["fitnessLevel"] as? String ?: "",
+                    goals = map["goals"] as? List<String> ?: emptyList(),
+                    preferences = map["preferences"] as? Map<String, Any> ?: emptyMap(),
+                    createdAt = map["createdAt"] as? Timestamp,
+                    updatedAt = map["updatedAt"] as? Timestamp,
+                    authProvider = map["authProvider"] as? String ?: "password"
                 )
             } catch (e: Exception) {
                 // If any exception occurs during mapping, return a minimal valid user
                 User(
-                    userId = map["user_id"] as? String ?: "",
+                    id = map["id"] as? String ?: "",
                     email = map["email"] as? String ?: "",
-                    authProvider = map["auth_provider"] as? String ?: "password"
+                    authProvider = map["authProvider"] as? String ?: "password"
                 )
             }
         }
@@ -51,7 +51,7 @@ data class User(
         // Create a safe user object with just the essential fields
         fun createMinimalUser(userId: String, email: String, authProvider: String = "password"): User {
             return User(
-                userId = userId,
+                id = userId,
                 email = email,
                 authProvider = authProvider
             )
@@ -60,32 +60,30 @@ data class User(
     
     fun toMap(): Map<String, Any?> {
         return mapOf(
-            "user_id" to userId,
+            "id" to id,
             "email" to email,
-            "password_hash" to passwordHash,
-            "full_name" to fullName,
-            "avatar_url" to avatarUrl,
+            "displayName" to displayName,
+            "avatar" to avatar,
             "age" to age,
             "gender" to gender,
             "height" to height,
             "weight" to weight,
-            "fitness_level" to fitnessLevel,
+            "fitnessLevel" to fitnessLevel,
             "goals" to goals,
-            "is_premium" to isPremium,
-            "created_at" to createdAt,
-            "updated_at" to updatedAt,
-            "auth_provider" to authProvider
+            "preferences" to preferences,
+            "createdAt" to createdAt,
+            "updatedAt" to updatedAt,
+            "authProvider" to authProvider
         )
     }
     
     // Check if all required profile fields are present
     fun hasCompleteProfile(): Boolean {
-        return fullName.isNotBlank() && 
+        return displayName.isNotBlank() && 
                gender.isNotBlank() && 
                age != null && 
                height != null && 
                weight != null && 
-               fitnessLevel.isNotBlank() && 
-               goals.isNotBlank()
+               fitnessLevel.isNotBlank()
     }
 } 

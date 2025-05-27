@@ -21,6 +21,7 @@ import com.example.nammoadidaphat.presentation.ui.onboarding.FitnessLevelScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.GenderScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.GoalScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.HeightScreen
+import com.example.nammoadidaphat.presentation.ui.onboarding.NameScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.WeightScreen
 import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
 import com.google.accompanist.pager.ExperimentalPagerApi
@@ -30,6 +31,7 @@ import kotlinx.coroutines.launch
 
 enum class OnboardingPage {
     Gender,
+    Name,
     Age,
     Weight,
     Height,
@@ -65,7 +67,22 @@ fun UserOnboardingNavGraph(
                         viewModel = viewModel,
                         onContinue = {
                             coroutineScope.launch {
+                                pagerState.animateScrollToPage(OnboardingPage.Name.ordinal)
+                            }
+                        }
+                    )
+                }
+                OnboardingPage.Name.ordinal -> {
+                    NameScreen(
+                        viewModel = viewModel,
+                        onContinue = {
+                            coroutineScope.launch {
                                 pagerState.animateScrollToPage(OnboardingPage.Age.ordinal)
+                            }
+                        },
+                        onBack = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(OnboardingPage.Gender.ordinal)
                             }
                         }
                     )
@@ -80,7 +97,7 @@ fun UserOnboardingNavGraph(
                         },
                         onBack = {
                             coroutineScope.launch {
-                                pagerState.animateScrollToPage(OnboardingPage.Gender.ordinal)
+                                pagerState.animateScrollToPage(OnboardingPage.Name.ordinal)
                             }
                         }
                     )
@@ -143,6 +160,5 @@ fun UserOnboardingNavGraph(
                 }
             }
         }
-        // Page indicators have been removed as requested
     }
 } 
