@@ -3,6 +3,7 @@ package com.example.nammoadidaphat.data.repository
 import android.content.Context
 import android.content.Intent
 import android.app.Activity
+import android.content.SharedPreferences
 import androidx.activity.result.ActivityResultLauncher
 import com.example.nammoadidaphat.R
 import com.example.nammoadidaphat.domain.model.User
@@ -23,6 +24,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.OAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.Timestamp
+import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -53,6 +55,16 @@ class AuthRepositoryImpl @Inject constructor(
     
     // Web Client ID cho Google Sign-In
     private val webClientId = "1026435770130-gha0scpj0328af1nnc5cl6ehmq3l40su.apps.googleusercontent.com"
+
+    // SharedPreferences to cache user auth state
+    private val sharedPrefs: SharedPreferences by lazy {
+        context.getSharedPreferences("auth_cache", Context.MODE_PRIVATE)
+    }
+    
+    // Gson for serializing/deserializing user object
+    private val gson: Gson by lazy {
+        Gson()
+    }
     
     // Google sign in
     private val googleSignInClient: GoogleSignInClient by lazy {
@@ -71,6 +83,34 @@ class AuthRepositoryImpl @Inject constructor(
         CallbackManager.Factory.create()
     }
 
+    // Save the user to local cache
+    private fun saveUserToCache(user: User?) {
+        if (user != null) {
+            val userJson = gson.toJson(user)
+            sharedPrefs.edit().putString("cached_user", userJson).apply()
+            sharedPrefs.edit().putBoolean("is_authenticated", true).apply()
+        } else {
+            sharedPrefs.edit().remove("cached_user").apply()
+            sharedPrefs.edit().putBoolean("is_authenticated", false).apply()
+        }
+    }
+
+    // Get the user from local cache
+    private fun getUserFromCache(): User? {
+        val userJson = sharedPrefs.getString("cached_user", null) ?: return null
+        return try {
+            gson.fromJson(userJson, User::class.java)
+        } catch (e: Exception) {
+            Timber.e(e, "Error parsing cached user")
+            null
+        }
+    }
+
+    // Check if user is authenticated based on cache
+    private fun isAuthenticatedFromCache(): Boolean {
+        return sharedPrefs.getBoolean("is_authenticated", false)
+    }
+    
     override suspend fun signIn(email: String, password: String): Result<User> = try {
         // Auth sign in
         val result = auth.signInWithEmailAndPassword(email, password).await()
@@ -99,6 +139,10 @@ class AuthRepositoryImpl @Inject constructor(
             
             // Get user data from Firestore
             val userData = getUserFromFirestore(user.uid)
+            
+            // Save to cache
+            saveUserToCache(userData)
+            
             Result.success(userData)
         } else {
             Result.failure(Exception("Authentication failed"))
@@ -150,6 +194,9 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signOut() {
+        // Clear cache first for immediate UI response
+        saveUserToCache(null)
+        
         auth.signOut()
         
         // Sign out from Google
@@ -192,9 +239,16 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override fun getCurrentUser(): Flow<User?> = callbackFlow {
+        // Immediately emit cached user if available
+        val cachedUser = getUserFromCache()
+        if (cachedUser != null && isAuthenticatedFromCache()) {
+            trySend(cachedUser)
+        }
+        
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             val firebaseUser = firebaseAuth.currentUser
             if (firebaseUser == null) {
+                saveUserToCache(null)
                 trySend(null)
             } else {
                 try {
@@ -214,6 +268,7 @@ class AuthRepositoryImpl @Inject constructor(
                                             authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
                                         )
                                     }
+                                    saveUserToCache(userData)
                                     trySend(userData)
                                 } else {
                                     // Create basic profile if Firestore data doesn't exist
@@ -230,6 +285,9 @@ class AuthRepositoryImpl @Inject constructor(
                                         updatedAt = timestamp,
                                         authProvider = providerId
                                     )
+                                    
+                                    // Cache the user data
+                                    saveUserToCache(userData)
                                     
                                     // Don't block the flow - just create the user record in the background
                                     usersCollection.document(firebaseUser.uid)
@@ -248,6 +306,7 @@ class AuthRepositoryImpl @Inject constructor(
                                     email = firebaseUser.email ?: "",
                                     authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
                                 )
+                                saveUserToCache(basicUser)
                                 trySend(basicUser)
                             }
                         }
@@ -259,6 +318,7 @@ class AuthRepositoryImpl @Inject constructor(
                                 email = firebaseUser.email ?: "",
                                 authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
                             )
+                            saveUserToCache(basicUser)
                             trySend(basicUser)
                         }
                 } catch (e: Exception) {
@@ -269,6 +329,7 @@ class AuthRepositoryImpl @Inject constructor(
                         email = firebaseUser.email ?: "",
                         authProvider = firebaseUser.providerData.firstOrNull()?.providerId ?: "password"
                     ) 
+                    saveUserToCache(basicUser)
                     trySend(basicUser)
                 }
             }

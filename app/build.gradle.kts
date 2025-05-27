@@ -72,6 +72,9 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.datastore:datastore-preferences-core:1.0.0")
 
+    // Gson for JSON serialization
+    implementation("com.google.code.gson:gson:2.10.1")
+
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")
