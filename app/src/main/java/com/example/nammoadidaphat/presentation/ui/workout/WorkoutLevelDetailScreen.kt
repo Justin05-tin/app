@@ -82,6 +82,9 @@ fun WorkoutLevelDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     
+    // Variable to track current exercise number to display in the center
+    val currentExerciseNumber = remember { mutableStateOf(1) }
+    
     Scaffold(
         topBar = {
             Row(
@@ -148,7 +151,12 @@ fun WorkoutLevelDetailScreen(
                     )
                     
                     // Exercises list
-                    ExercisesList(exercises = exercises)
+                    ExercisesList(
+                        exercises = exercises,
+                        onExerciseVisible = { exerciseNumber -> 
+                            currentExerciseNumber.value = exerciseNumber 
+                        }
+                    )
                     
                     // Start button
                     Button(
@@ -170,6 +178,8 @@ fun WorkoutLevelDetailScreen(
                     }
                 }
             }
+            
+
         }
     }
 }
@@ -237,13 +247,19 @@ fun LevelSummary(level: Level, exercises: List<Exercise>) {
 }
 
 @Composable
-fun ExercisesList(exercises: List<Exercise>) {
+fun ExercisesList(
+    exercises: List<Exercise>,
+    onExerciseVisible: (Int) -> Unit = {}
+) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(bottom = 80.dp)
     ) {
         itemsIndexed(exercises) { index, exercise ->
-            ExerciseItem(exerciseNumber = index + 1, exercise = exercise)
+            val exerciseNumber = index + 1
+            // Update the current visible exercise
+            onExerciseVisible(exerciseNumber)
+            ExerciseItem(exerciseNumber = exerciseNumber, exercise = exercise)
         }
     }
 }

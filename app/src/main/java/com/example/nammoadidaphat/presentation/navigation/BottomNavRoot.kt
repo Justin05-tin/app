@@ -36,48 +36,59 @@ fun BottomNavRoot(
     val navController = rememberNavController()
     val items = BottomNavScreen.items
     
+    // Get current route
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    
+    // Check if current screen is one of the main screens
+    val isMainScreen = currentRoute == BottomNavScreen.Overview.route ||
+                      currentRoute == BottomNavScreen.Workout.route ||
+                      currentRoute == BottomNavScreen.Report.route ||
+                      currentRoute == BottomNavScreen.Profile.route
+    
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.background
-            ) {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentRoute = navBackStackEntry?.destination?.route
-                items.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Icon(
-                            imageVector = screen.icon, 
-                            contentDescription = screen.title,
-                            tint = if (currentRoute == screen.route) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                        ) },
-                        label = { Text(
-                            text = screen.title,
-                            color = if (currentRoute == screen.route) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                        ) },
-                        selected = currentRoute == screen.route,
-                        onClick = {
-                            if (currentRoute != screen.route) {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+            // Only show bottom navigation if we're on a main screen
+            if (isMainScreen) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.background
+                ) {
+                    items.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { Icon(
+                                imageVector = screen.icon, 
+                                contentDescription = screen.title,
+                                tint = if (currentRoute == screen.route) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            ) },
+                            label = { Text(
+                                text = screen.title,
+                                color = if (currentRoute == screen.route) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            ) },
+                            selected = currentRoute == screen.route,
+                            onClick = {
+                                if (currentRoute != screen.route) {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
-                            }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            indicatorColor = MaterialTheme.colorScheme.background
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                                indicatorColor = MaterialTheme.colorScheme.background
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
