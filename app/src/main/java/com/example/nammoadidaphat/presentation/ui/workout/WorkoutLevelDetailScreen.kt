@@ -136,29 +136,35 @@ fun WorkoutLevelDetailScreen(
             
             // Show level details and exercises when loaded
             if (!isLoading && error == null && level != null) {
-                Column(
+                Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Level summary
-                    LevelSummary(level = level!!, exercises = exercises)
-                    
-                    // Divider
-                    HorizontalDivider(
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        color = Color.LightGray.copy(alpha = 0.5f)
-                    )
+                            .fillMaxSize()
+                            .padding(bottom = 80.dp) // Add bottom padding for the button
+                    ) {
+                        // Level summary
+                        LevelSummary(level = level!!, exercises = exercises)
+                        
+                        // Divider
+                        HorizontalDivider(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            color = Color.LightGray.copy(alpha = 0.5f)
+                        )
+                        
+                        // Exercises list
+                        ExercisesList(
+                            exercises = exercises,
+                            onExerciseVisible = { exerciseNumber -> 
+                                currentExerciseNumber.value = exerciseNumber 
+                            }
+                        )
+                    }
                     
-                    // Exercises list
-                    ExercisesList(
-                        exercises = exercises,
-                        onExerciseVisible = { exerciseNumber -> 
-                            currentExerciseNumber.value = exerciseNumber 
-                        }
-                    )
-                    
-                    // Start button
+                    // Start button - positioned at the bottom
                     Button(
                         onClick = { 
                             // Navigate to workout session screen with the level ID
@@ -167,10 +173,11 @@ fun WorkoutLevelDetailScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 32.dp, vertical = 16.dp)
-                            .height(56.dp),
+                            .height(56.dp)
+                            .align(Alignment.BottomCenter), // Align at bottom center
                         shape = RoundedCornerShape(28.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF0066CC)
+                            containerColor = Color(0xFF8B5CF6)
                         )
                     ) {
                         Text(
@@ -255,8 +262,7 @@ fun ExercisesList(
     onExerciseVisible: (Int) -> Unit = {}
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        modifier = Modifier.fillMaxWidth()
     ) {
         itemsIndexed(exercises) { index, exercise ->
             val exerciseNumber = index + 1

@@ -88,19 +88,19 @@ fun RegisterScreen(
             // Title
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "BODY GOALS",
+                    text = "Create your",
                     color = Color.White,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Left
                 )
-                
+
                 Text(
-                    text = "WORKOUT",
+                    text = "Account",
                     color = Color.White,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Left
                 )
             }
             
@@ -216,11 +216,11 @@ fun RegisterScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(62.dp)
                         .padding(top = 16.dp),
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0xFFFFEB3B) // Yellow color
+                        backgroundColor = Color(0xFF8B5CF6) // Yellow color
                     ),
                     enabled = !isLoading
                 ) {
@@ -233,7 +233,7 @@ fun RegisterScreen(
                     } else {
                         Text(
                             text = "Register",
-                            color = Color.Black,
+                            color = Color.White,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -333,7 +333,7 @@ fun RegisterScreen(
                     ClickableText(
                         text = AnnotatedString("Login here"),
                         style = TextStyle(
-                            color = Color(0xFFFFEB3B),
+                            color = Color(0xFF8B5CF6),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         ),

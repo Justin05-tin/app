@@ -180,41 +180,13 @@ fun SplashScreen(
         ) {
             Spacer(modifier = Modifier.weight(1f))
             
-            // App logo with animation
-            AnimatedVisibility(
-                visible = true,
-                enter = fadeIn(animationSpec = tween(700)) + // Reduced from 1000ms to 700ms
-                        slideInVertically(animationSpec = tween(700)) { it / 2 } // Reduced from 1000ms to 700ms
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = "App Logo",
-                    modifier = Modifier
-                        .size(160.dp)
-                        .scale(scale.value)
-                        .background(Color.Transparent)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // App name
-            Text(
-                text = "EXS",
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            )
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
             // Loading indicator
             LinearProgressIndicator(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp),
-                color = Color.White,
+                color =  Color(0xFF8B5CF6),
                 trackColor = Color.Gray.copy(alpha = 0.3f)
             )
             

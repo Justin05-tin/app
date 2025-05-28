@@ -121,7 +121,7 @@ fun LoginScreen(
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(60.dp),
-                        color = Color(0xFFFFEB3B), // Yellow color to match the theme
+                        color = Color(0xFF8B5CF6), // Yellow color to match the theme
                         strokeWidth = 5.dp
                     )
                     
@@ -153,20 +153,13 @@ fun LoginScreen(
                 // Title
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "BODY GOALS",
+                        text = "Let's you in",
                         color = Color.White,
                         fontSize = 36.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
-                    
-                    Text(
-                        text = "WORKOUT",
-                        color = Color.White,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center
-                    )
+
                 }
                 
                 // Login Form
@@ -258,11 +251,11 @@ fun LoginScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
+                            .height(62.dp)
                             .padding(top = 16.dp),
                         shape = RoundedCornerShape(28.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color(0xFFFFEB3B) // Yellow color
+                            backgroundColor = Color(0xFF8B5CF6) // Yellow color
                         ),
                         enabled = !isLoading
                     ) {
@@ -275,7 +268,7 @@ fun LoginScreen(
                         } else {
                             Text(
                                 text = "Sign In",
-                                color = Color.Black,
+                                color = Color.White,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -375,7 +368,7 @@ fun LoginScreen(
                         ClickableText(
                             text = AnnotatedString("Sign Up here"),
                             style = TextStyle(
-                                color = Color(0xFFFFEB3B),
+                                color = Color(0xFF8B5CF6),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             ),
