@@ -3,6 +3,7 @@ package com.example.nammoadidaphat.presentation.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,6 +29,8 @@ import com.example.nammoadidaphat.presentation.viewmodel.ExerciseViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelDetailViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelsViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutSessionViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.ReportViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,7 +104,14 @@ fun BottomNavRoot(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(BottomNavScreen.Overview.route) { 
-                HomeScreen(navController = mainNavController, authViewModel = authViewModel) 
+                val authViewModel = hiltViewModel<AuthViewModel>()
+                val homeViewModel = hiltViewModel<HomeViewModel>()
+                
+                HomeScreen(
+                    navController = mainNavController,
+                    authViewModel = authViewModel,
+                    homeViewModel = homeViewModel
+                ) 
             }
             
             composable(BottomNavScreen.Workout.route) { 
@@ -160,7 +170,18 @@ fun BottomNavRoot(
             }
             
             composable(BottomNavScreen.Report.route) { 
-                ReportScreen() 
+                val reportViewModel = hiltViewModel<ReportViewModel>()
+                val authViewModel = hiltViewModel<AuthViewModel>()
+                
+                // Refresh data when navigating to this screen
+                LaunchedEffect(Unit) {
+                    reportViewModel.refreshData()
+                }
+                
+                ReportScreen(
+                    reportViewModel = reportViewModel,
+                    authViewModel = authViewModel
+                ) 
             }
             
             composable(BottomNavScreen.Profile.route) { 

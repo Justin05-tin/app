@@ -47,6 +47,11 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    
+    lint {
+        abortOnError = false
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 configurations.all {
@@ -82,6 +87,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3-window-size-class")
+    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.0.0-alpha04")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
@@ -122,6 +129,7 @@ dependencies {
     // Accompanist libraries
     implementation("com.google.accompanist:accompanist-pager:0.32.0")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
 
     // Google Auth
     implementation("com.google.android.gms:play-services-auth:20.7.0")

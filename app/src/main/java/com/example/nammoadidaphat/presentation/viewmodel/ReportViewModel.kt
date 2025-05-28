@@ -30,14 +30,33 @@ class ReportViewModel @Inject constructor(
     
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+    
+    private val _lastRefreshTime = MutableStateFlow(0L)
+    val lastRefreshTime: StateFlow<Long> = _lastRefreshTime.asStateFlow()
 
     init {
         loadUserProgress()
     }
     
-    fun loadUserProgress() {
+    // Call this when the screen becomes visible or when you need fresh data
+    fun refreshData() {
         viewModelScope.launch {
-            _isLoading.value = true
+            _isRefreshing.value = true
+            loadUserProgress(isRefresh = true)
+            _isRefreshing.value = false
+            _lastRefreshTime.value = System.currentTimeMillis()
+        }
+    }
+    
+    fun loadUserProgress(isRefresh: Boolean = false) {
+        viewModelScope.launch {
+            if (!isRefresh) {
+                _isLoading.value = true
+            }
+            
             try {
                 val currentUser = authRepository.getCurrentUser().first()
                 if (currentUser != null) {
@@ -48,6 +67,9 @@ class ReportViewModel @Inject constructor(
                     
                     // Calculate today's stats
                     calculateTodayStats(progressList)
+                    
+                    // Update last refresh time
+                    _lastRefreshTime.value = System.currentTimeMillis()
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Error loading user progress")
