@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -121,7 +124,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 TextButton(onClick = {
-                    viewModel.logout()
+                    viewModel.signOut(navController)
                     navController.navigate("login") {
                         popUpTo("main_nav_graph") { inclusive = true }
                     }
@@ -325,113 +328,97 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.height(24.dp))
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Settings options
+                    SettingsItem(
+                        icon = Icons.Default.Person,
+                        title = "Edit Profile",
+                        onClick = { viewModel.navigateToEditProfile(navController) }
+                    )
+
+                    SettingsItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Notification",
+                        onClick = { viewModel.navigateToNotifications(navController) }
+                    )
+
+                    SettingsItem(
+                        icon = Icons.Default.Lock,
+                        title = "Security",
+                        onClick = { viewModel.navigateToSecurity(navController) }
+                    )
+
+                    SettingsItem(
+                        icon = Icons.Default.Help,
+                        title = "Help",
+                        onClick = { viewModel.navigateToHelp(navController) }
+                    )
                     
-                    // Menu Items
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
+                    // Dark Theme Toggle
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Edit Profile
-                        MenuRow(
-                            icon = Icons.Default.Person,
-                            title = "Edit Profile",
-                            onClick = { viewModel.navigateToEditProfile(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Notifications
-                        MenuRow(
-                            icon = Icons.Default.Notifications,
-                            title = "Notifications",
-                            onClick = { viewModel.navigateToNotifications(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Security
-                        MenuRow(
-                            icon = Icons.Default.Lock,
-                            title = "Security",
-                            onClick = { viewModel.navigateToSecurity(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Help
-                        MenuRow(
-                            icon = Icons.Default.Info,
-                            title = "Help",
-                            onClick = { viewModel.navigateToHelp(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Dark Theme
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Refresh,
-                                    contentDescription = "Dark Theme",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                
-                                Spacer(modifier = Modifier.width(16.dp))
-                                
-                                Text(
-                                    text = "Dark Theme",
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                            }
-                            
-                            Switch(
-                                checked = isDarkTheme,
-                                onCheckedChange = { themeViewModel.toggleDarkTheme() },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Color(0xFF7B50E8),
-                                    checkedIconColor = Color.White,
-                                    uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = Color.LightGray,
-                                    uncheckedIconColor = Color.LightGray
-                                )
-                            )
-                        }
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Logout
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showLogoutDialog = true }
-                                .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ExitToApp,
-                                contentDescription = "Logout",
-                                tint = Color(0xFFE57373), // Red color
+                                imageVector = Icons.Default.DarkMode,
+                                contentDescription = "Dark Theme",
+                                tint = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.size(24.dp)
                             )
                             
                             Spacer(modifier = Modifier.width(16.dp))
                             
                             Text(
-                                text = "Logout",
+                                text = "Dark Theme",
                                 fontSize = 16.sp,
-                                color = Color(0xFFE57373) // Red color
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
+                        
+                        Switch(
+                            checked = isDarkTheme,
+                            onCheckedChange = { themeViewModel.toggleDarkTheme() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+                    
+                    Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+                    
+                    // Logout Button
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showLogoutDialog = true }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Logout,
+                            contentDescription = "Logout",
+                            tint = Color(0xFFE57373), // Red color
+                            modifier = Modifier.size(24.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Text(
+                            text = "Logout",
+                            fontSize = 16.sp,
+                            color = Color(0xFFE57373) // Red color
+                        )
                     }
                 }
             }
@@ -462,7 +449,7 @@ fun ProfileScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            viewModel.logout()
+                            viewModel.signOut(navController)
                             showLogoutDialog = false
                             // Navigate back to login screen
                             navController.navigate("login") {
@@ -584,4 +571,48 @@ private fun FallbackProfileBox() {
             modifier = Modifier.size(60.dp)
         )
     }
+}
+
+@Composable
+fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(24.dp)
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = "Navigate",
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            modifier = Modifier.size(24.dp)
+        )
+    }
+    
+    Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
 } 

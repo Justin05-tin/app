@@ -52,6 +52,11 @@ import javax.inject.Inject
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.navigation.NavController
+import com.example.nammoadidaphat.presentation.ui.profile.ChangePasswordScreen
+import com.example.nammoadidaphat.presentation.ui.profile.GoogleAuthenticatorScreen
+import com.example.nammoadidaphat.presentation.ui.profile.HelpScreen
+import com.example.nammoadidaphat.presentation.ui.profile.NotificationScreen
+import com.example.nammoadidaphat.presentation.ui.profile.SecurityScreen
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 
@@ -248,6 +253,26 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("edit_profile") {
                             EditProfileScreen(navController = navController)
+                        }
+                        
+                        composable("notifications") {
+                            NotificationScreen(navController = navController)
+                        }
+                        
+                        composable("security") {
+                            SecurityScreen(navController = navController)
+                        }
+                        
+                        composable("change_password") {
+                            ChangePasswordScreen(navController = navController)
+                        }
+                        
+                        composable("google_authenticator") {
+                            GoogleAuthenticatorScreen(navController = navController)
+                        }
+                        
+                        composable("help") {
+                            HelpScreen(navController = navController)
                         }
                     }
                 }

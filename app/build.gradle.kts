@@ -145,6 +145,9 @@ dependencies {
     // Facebook SDK
     implementation("com.facebook.android:facebook-login:16.2.0")
     implementation("com.facebook.android:facebook-android-sdk:16.2.0")
+
+    // Add Material Icons Extended if not present
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
 }
 
 apply(plugin = "com.google.gms.google-services")

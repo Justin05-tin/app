@@ -84,16 +84,15 @@ class ProfileViewModel @Inject constructor(
         Timber.d("Upgrade to Pro clicked")
     }
     
-    fun logout() {
+    fun signOut(navController: NavController) {
         viewModelScope.launch {
             try {
                 authRepository.signOut()
-                // Navigation will be handled in the UI
+                navController.navigate("login") {
+                    popUpTo("main") { inclusive = true }
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Error signing out")
-                _uiState.value = _uiState.value.copy(
-                    error = "Failed to sign out: ${e.message}"
-                )
             }
         }
     }
