@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,6 +59,15 @@ fun WorkoutSessionScreen(
     val isPaused by viewModel.isPaused.collectAsState()
     val totalExercises by viewModel.totalExercises.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    
+    // Listen for navigation events
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collect { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.popBackStack()
+            }
+        }
+    }
     
     // Progress animation
     val progressPercentage = if (workoutState == WorkoutState.READY) {
@@ -226,15 +236,33 @@ fun WorkoutSessionScreen(
                         )
                     }
                     
-                    // Skip button
+                    // Skip or Check button
                     FloatingActionButton(
-                        onClick = { viewModel.skipToNext() },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        onClick = { 
+                            if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE) {
+                                viewModel.completeWorkout()
+                            } else {
+                                viewModel.skipToNext()
+                            }
+                        },
+                        containerColor = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE)
+                            Color(0xFF4CAF50) // Green for Check button
+                        else 
+                            MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE)
+                            Color.White
+                        else
+                            MaterialTheme.colorScheme.onSecondaryContainer
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "Skip"
+                            imageVector = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE) 
+                                        Icons.Default.Check
+                                    else 
+                                        Icons.Default.ArrowForward,
+                            contentDescription = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE) 
+                                              "Complete" 
+                                          else 
+                                              "Skip"
                         )
                     }
                 }

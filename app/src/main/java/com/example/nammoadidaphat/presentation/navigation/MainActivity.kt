@@ -30,6 +30,7 @@ import com.example.nammoadidaphat.presentation.ui.auth.ForgotPasswordScreen
 import com.example.nammoadidaphat.presentation.ui.auth.LoginScreen
 import com.example.nammoadidaphat.presentation.ui.auth.RegisterScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.OnboardingScreen
+import com.example.nammoadidaphat.presentation.ui.profile.EditProfileScreen
 import com.example.nammoadidaphat.presentation.ui.splash.SplashScreen
 import com.example.nammoadidaphat.presentation.viewmodel.AuthState
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
@@ -189,8 +190,8 @@ class MainActivity : ComponentActivity() {
                         composable("splash") {
                             SplashScreen(
                                 navController = navController,
-                                onboardingViewModel = onboardingViewModel,
-                                authViewModel = composeAuthViewModel
+                                authViewModel = composeAuthViewModel,
+                                onboardingViewModel = onboardingViewModel
                             )
                         }
                         composable("onboarding") {
@@ -203,11 +204,10 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 navController = navController,
                                 viewModel = composeAuthViewModel,
-                                onGoogleSignInClicked = { 
+                                onGoogleSignInClicked = {
                                     startGoogleSignIn()
                                 },
                                 onFacebookSignInClicked = {
-                                    // Initialize Facebook login
                                     authRepository.initiateLoginWithFacebook(this@MainActivity)
                                 }
                             )
@@ -245,6 +245,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("forgot_password") {
                             ForgotPasswordScreen(navController = navController)
+                        }
+                        composable("edit_profile") {
+                            EditProfileScreen(navController = navController)
                         }
                     }
                 }
