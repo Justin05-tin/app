@@ -9,7 +9,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -38,6 +39,7 @@ class ReportViewModel @Inject constructor(
     val lastRefreshTime: StateFlow<Long> = _lastRefreshTime.asStateFlow()
 
     init {
+        Timber.d("ReportViewModel: Initializing...")
         loadUserProgress()
     }
     
@@ -45,6 +47,7 @@ class ReportViewModel @Inject constructor(
     fun refreshData() {
         viewModelScope.launch {
             _isRefreshing.value = true
+            Timber.d("ReportViewModel: Refresh data called, triggering loadUserProgress")
             loadUserProgress(isRefresh = true)
             _isRefreshing.value = false
             _lastRefreshTime.value = System.currentTimeMillis()
@@ -55,25 +58,45 @@ class ReportViewModel @Inject constructor(
         viewModelScope.launch {
             if (!isRefresh) {
                 _isLoading.value = true
+                Timber.d("ReportViewModel: Loading started, isLoading set to true")
+            } else {
+                Timber.d("ReportViewModel: Refreshing data")
             }
             
             try {
-                val currentUser = authRepository.getCurrentUser().first()
-                if (currentUser != null) {
-                    val progressFlow = userProgressRepository.getUserProgress(currentUser.id)
-                    val progressList = progressFlow.firstOrNull() ?: emptyList()
+                Timber.d("ReportViewModel: Attempting to get current user")
+                authRepository.getCurrentUser().collectLatest { currentUser ->
+                    Timber.d("ReportViewModel: Current user: ${currentUser?.email}, ID: ${currentUser?.id}")
                     
-                    _userProgress.value = progressList
-                    
-                    // Calculate today's stats
-                    calculateTodayStats(progressList)
-                    
-                    // Update last refresh time
-                    _lastRefreshTime.value = System.currentTimeMillis()
+                    if (currentUser != null) {
+                        Timber.d("ReportViewModel: Getting progress for user ${currentUser.id}")
+                        userProgressRepository.getUserProgress(currentUser.id)
+                            .catch { e -> 
+                                Timber.e(e, "ReportViewModel: Error collecting user progress") 
+                            }
+                            .collectLatest { progressList ->
+                                Timber.d("ReportViewModel: Received ${progressList.size} progress records")
+                                _userProgress.value = progressList
+                                
+                                // Calculate today's stats
+                                calculateTodayStats(progressList)
+                                
+                                // Update last refresh time
+                                _lastRefreshTime.value = System.currentTimeMillis()
+                                
+                                // Set loading to false if we received data
+                                if (!isRefresh) {
+                                    _isLoading.value = false
+                                    Timber.d("ReportViewModel: Loading finished, isLoading set to false")
+                                }
+                            }
+                    } else {
+                        Timber.e("ReportViewModel: Current user is null")
+                        _isLoading.value = false
+                    }
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Error loading user progress")
-            } finally {
+                Timber.e(e, "ReportViewModel: Error loading user progress")
                 _isLoading.value = false
             }
         }
@@ -108,6 +131,8 @@ class ReportViewModel @Inject constructor(
         val exerciseCount = todayProgress.size
         val totalCalories = todayProgress.sumOf { it.caloriesBurned }
         val totalDuration = todayProgress.sumOf { it.workoutDuration }
+        
+        Timber.d("ReportViewModel: Calculated today's stats - exercises: $exerciseCount, calories: $totalCalories, duration: $totalDuration")
         
         _todayStats.value = DailyStats(
             exerciseCount = exerciseCount,

@@ -54,6 +54,7 @@ import kotlin.math.round
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import timber.log.Timber
 
 @Composable
 fun ReportScreen(
@@ -69,8 +70,18 @@ fun ReportScreen(
     // Setup swipe-to-refresh
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
     
+    // Log state changes for debugging
+    LaunchedEffect(isLoading, isRefreshing) {
+        Timber.d("ReportScreen: isLoading=$isLoading, isRefreshing=$isRefreshing")
+    }
+    
+    LaunchedEffect(todayStats) {
+        Timber.d("ReportScreen: todayStats updated - exerciseCount=${todayStats.exerciseCount}, calories=${todayStats.totalCalories}, duration=${todayStats.totalDuration}")
+    }
+    
     // Refresh data when screen appears
     LaunchedEffect(Unit) {
+        Timber.d("ReportScreen: Initial load triggered")
         reportViewModel.refreshData()
     }
     
@@ -98,252 +109,310 @@ fun ReportScreen(
                     modifier = Modifier.align(Alignment.Center),
                     color = MaterialTheme.colorScheme.primary
                 )
+                Timber.d("ReportScreen: Showing loading indicator")
             } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                        .verticalScroll(rememberScrollState()),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Report header with refresh button
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                val userProgress by reportViewModel.userProgress.collectAsState()
+                
+                Timber.d("ReportScreen: Rendering UI with ${userProgress.size} progress records")
+                
+                if (userProgress.isEmpty() && !isLoading && !isRefreshing) {
+                    // Empty state
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = "Báo cáo",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                         )
                         
-                        IconButton(
-                            onClick = { reportViewModel.refreshData() }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Text(
+                            text = "Chưa có dữ liệu tiến trình",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "Hãy hoàn thành một bài tập để thấy báo cáo của bạn",
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        androidx.compose.material3.Button(
+                            onClick = { reportViewModel.refreshData() },
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh",
-                                tint = MaterialTheme.colorScheme.primary
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp)
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = "Làm mới dữ liệu")
                         }
                     }
-                    
-                    // Last update time
-                    if (formattedTime.isNotEmpty()) {
-                        Text(
-                            text = formattedTime,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Daily stats section
-                    Text(
-                        text = "THỐNG KÊ HÀNG NGÀY",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                        modifier = Modifier.align(Alignment.Start)
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Daily stats cards
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp)
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = R.drawable.ic_fitness,
-                            value = todayStats.exerciseCount.toString(),
-                            label = "BÀI TẬP",
-                            iconTint = Color(0xFF4CAF50)
-                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                         
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = R.drawable.ic_fire,
-                            value = todayStats.totalCalories.toString(),
-                            label = "KCAL",
-                            iconTint = Color(0xFFE91E63)
-                        )
-                        
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = R.drawable.ic_timer,
-                            value = formatDuration(todayStats.totalDuration),
-                            label = "THỜI GIAN",
-                            iconTint = Color(0xFF2196F3)
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Body metrics section
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp)
+                        // Report header with refresh button
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Chỉ số cơ thể",
-                                fontSize = 18.sp,
+                                text = "Báo cáo",
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Weight display from user data
-                            BodyMetricRow(
-                                icon = R.drawable.ic_weight,
-                                label = "Trọng Lượng",
-                                value = formatWeight(currentUser?.weight),
-                                iconTint = Color(0xFF2196F3)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Height display from user data
-                            BodyMetricRow(
-                                icon = R.drawable.ic_height,
-                                label = "Chiều cao",
-                                value = formatHeight(currentUser?.height),
-                                iconTint = Color(0xFF2196F3)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Calculate and display BMI
-                            val bmiData = calculateBMI(currentUser)
-                            
-                            BodyMetricRow(
-                                icon = R.drawable.ic_bmi,
-                                label = "BMI",
-                                value = bmiData.displayText,
-                                iconTint = Color(0xFF2196F3)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // BMI indicator with dynamic position based on BMI value
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                            IconButton(
+                                onClick = { reportViewModel.refreshData() }
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(bmiData.indicatorPosition)
-                                        .height(8.dp)
-                                        .background(
-                                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                                colors = listOf(
-                                                    Color(0xFF4CAF50), // Green for normal
-                                                    Color(0xFFFFEB3B)  // Yellow for warning
-                                                )
-                                            ),
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Refresh",
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Water intake section
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        
+                        // Last update time
+                        if (formattedTime.isNotEmpty()) {
                             Text(
-                                text = "Lượng Nước",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.align(Alignment.Start)
+                                text = formattedTime,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                                modifier = Modifier.align(Alignment.End)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // Daily stats section
+                        Text(
+                            text = "THỐNG KÊ HÀNG NGÀY",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            modifier = Modifier.align(Alignment.Start)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Daily stats cards
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = R.drawable.ic_fitness,
+                                value = todayStats.exerciseCount.toString(),
+                                label = "BÀI TẬP",
+                                iconTint = Color(0xFF4CAF50)
                             )
                             
-                            Spacer(modifier = Modifier.height(16.dp))
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = R.drawable.ic_fire,
+                                value = todayStats.totalCalories.toString(),
+                                label = "KCAL",
+                                iconTint = Color(0xFFE91E63)
+                            )
                             
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = R.drawable.ic_timer,
+                                value = formatDuration(todayStats.totalDuration),
+                                label = "THỜI GIAN",
+                                iconTint = Color(0xFF2196F3)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // Body metrics section
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
                             ) {
-                                // Decrease button
-                                FloatingActionButton(
-                                    onClick = { /* Handle decrease */ },
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Clear,
-                                        contentDescription = "Decrease",
-                                        tint = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
+                                Text(
+                                    text = "Chỉ số cơ thể",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                                 
-                                // Water counter
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = "0/9",
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF2196F3)
-                                    )
-                                    
-                                    Text(
-                                        text = "(0 ml)",
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                                    )
-                                }
+                                Spacer(modifier = Modifier.height(16.dp))
                                 
-                                // Increase button
-                                FloatingActionButton(
-                                    onClick = { /* Handle increase */ },
-                                    containerColor = PrimaryColor,
-                                    contentColor = Color.White,
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(48.dp)
+                                // Weight display from user data
+                                BodyMetricRow(
+                                    icon = R.drawable.ic_weight,
+                                    label = "Trọng Lượng",
+                                    value = formatWeight(currentUser?.weight),
+                                    iconTint = Color(0xFF2196F3)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                // Height display from user data
+                                BodyMetricRow(
+                                    icon = R.drawable.ic_height,
+                                    label = "Chiều cao",
+                                    value = formatHeight(currentUser?.height),
+                                    iconTint = Color(0xFF2196F3)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                // Calculate and display BMI
+                                val bmiData = calculateBMI(currentUser)
+                                
+                                BodyMetricRow(
+                                    icon = R.drawable.ic_bmi,
+                                    label = "BMI",
+                                    value = bmiData.displayText,
+                                    iconTint = Color(0xFF2196F3)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // BMI indicator with dynamic position based on BMI value
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .background(Color.LightGray.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "Increase"
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth(bmiData.indicatorPosition)
+                                            .height(8.dp)
+                                            .background(
+                                                brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                                    colors = listOf(
+                                                        Color(0xFF4CAF50), // Green for normal
+                                                        Color(0xFFFFEB3B)  // Yellow for warning
+                                                    )
+                                                ),
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
                                     )
                                 }
                             }
                         }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // Water intake section
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Lượng Nước",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.align(Alignment.Start)
+                                )
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Decrease button
+                                    FloatingActionButton(
+                                        onClick = { /* Handle decrease */ },
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                        contentColor = MaterialTheme.colorScheme.onSurface,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Clear,
+                                            contentDescription = "Decrease",
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    
+                                    // Water counter
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "0/9",
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF2196F3)
+                                        )
+                                        
+                                        Text(
+                                            text = "(0 ml)",
+                                            fontSize = 16.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                    
+                                    // Increase button
+                                    FloatingActionButton(
+                                        onClick = { /* Handle increase */ },
+                                        containerColor = PrimaryColor,
+                                        contentColor = Color.White,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = "Increase"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav bar
                     }
-                    
-                    Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav bar
                 }
             }
         }

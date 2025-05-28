@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -163,9 +164,17 @@ fun EditProfileScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             } else {
-                                // Display profile image
-                                val profileImage = uiState.user?.avatar
-                                if (profileImage != null && profileImage.isNotEmpty()) {
+                                // Display profile image with comprehensive error handling
+                                val profileImage = uiState.user?.avatar ?: ""
+                                
+                                // Kiểm tra kỹ lưỡng xem avatar có hợp lệ không
+                                val isValidUrl = profileImage.isNotBlank() &&
+                                    (profileImage.startsWith("http://") || 
+                                     profileImage.startsWith("https://") || 
+                                     profileImage.startsWith("content://") || 
+                                     profileImage.startsWith("file://"))
+                                
+                                if (isValidUrl) {
                                     Image(
                                         painter = rememberAsyncImagePainter(
                                             model = ImageRequest.Builder(LocalContext.current)
@@ -180,13 +189,35 @@ fun EditProfileScreen(
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {
-                                    // Default profile icon
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = "Profile",
-                                        modifier = Modifier.size(40.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                    // Hiển thị ảnh mặc định không dùng try-catch
+                                    // Sử dụng flag để kiểm soát việc hiển thị
+                                    val useDefaultResource = true
+                                    
+                                    if (useDefaultResource) {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.profile_placeholder),
+                                            contentDescription = "Default Profile Picture",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize()
+                                        )
+                                    } else {
+                                        // Fallback avatar đơn giản
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = "Default Avatar",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(50.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -104,19 +104,25 @@ class UserOnboardingViewModel @Inject constructor(
         }
         
         return try {
+            // Đảm bảo không lưu giá trị rỗng cho các trường bắt buộc
+            val gender = _gender.value.ifBlank { "Not specified" }
+            val displayName = _displayName.value.ifBlank { currentUser.email.substringBefore('@') }
+            val fitnessLevel = _fitnessLevel.value.ifBlank { "beginner" }
+            val goal = _goal.value.ifBlank { "Get fit" }
+            
             // Update the user object with the collected data
             val updatedUser = currentUser.copy(
-                gender = _gender.value,
-                displayName = _displayName.value,
+                gender = gender,
+                displayName = displayName,
                 age = _age.value,
                 weight = _weight.value,
                 height = _height.value,
-                goals = listOf(_goal.value),
-                fitnessLevel = _fitnessLevel.value
+                goals = listOf(goal),
+                fitnessLevel = fitnessLevel
             )
             
             // Log the data before saving - for debugging
-            android.util.Log.d("UserOnboardingViewModel", "Saving user data: ${updatedUser.id}, name: ${updatedUser.displayName}")
+            android.util.Log.d("UserOnboardingViewModel", "Saving user data: ${updatedUser.id}, name: ${updatedUser.displayName}, gender: ${updatedUser.gender}, fitnessLevel: ${updatedUser.fitnessLevel}")
             
             val result = authRepository.updateUserProfile(updatedUser)
             

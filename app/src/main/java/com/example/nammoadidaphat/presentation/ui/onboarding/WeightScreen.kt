@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
+import kotlin.math.abs
 
 @Composable
 fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
@@ -47,11 +48,9 @@ fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
     val scrollState = rememberScrollState()
     var selectedWeight by remember { mutableIntStateOf((weight?.toInt() ?: 65)) }
     
-    // Set reasonable limits for weight
     val minWeight = 30
     val maxWeight = 150
     
-    // Update the weight in the viewModel when it changes
     viewModel.updateWeight(selectedWeight.toFloat())
     
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
@@ -75,17 +74,15 @@ fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
             )
             
             Spacer(modifier = Modifier.height(40.dp))
-            
-            // Weight selector
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Up arrow to increase weight
                 IconButton(
                     onClick = {
                         if (selectedWeight < maxWeight) {
-                            selectedWeight += 1
+                            selectedWeight++
                         }
                     }
                 ) {
@@ -96,113 +93,79 @@ fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
                         modifier = Modifier.size(36.dp)
                     )
                 }
-                
-                // Weight number vertical selector with drag support
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp) // Increased height for better spacing
+                        .height(300.dp)
                         .pointerInput(Unit) {
                             detectVerticalDragGestures { _, dragAmount ->
                                 when {
-                                    dragAmount < 0 && selectedWeight < maxWeight -> selectedWeight += 1
-                                    dragAmount > 0 && selectedWeight > minWeight -> selectedWeight -= 1
+                                    dragAmount < 0 && selectedWeight < maxWeight -> selectedWeight++
+                                    dragAmount > 0 && selectedWeight > minWeight -> selectedWeight--
                                 }
                             }
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    // Previous numbers with consistent spacing
-                    Text(
-                        text = "${selectedWeight - 4}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray.copy(alpha = 0.2f),
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 20.dp)
-                    )
-                    
-                    Text(
-                        text = "${selectedWeight - 3}",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray.copy(alpha = 0.3f),
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp)
-                    )
-                    
-                    Text(
-                        text = "${selectedWeight - 2}",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray.copy(alpha = 0.5f),
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
-                    )
-                    
-                    Text(
-                        text = "${selectedWeight - 1}",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.Gray.copy(alpha = 0.8f),
-                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 140.dp)
-                    )
-                    
-                    // Selected weight
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 80.dp)
-                            .height(56.dp) // Fixed height for the selected box
-                            .background(Color(0xFF8B5CF6), RoundedCornerShape(8.dp))
-                            .align(Alignment.Center),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = "$selectedWeight",
-                            fontSize = 36.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
+                        (-4..4).forEach { offset ->
+                            val value = selectedWeight + offset
+                            if (value in minWeight..maxWeight) {
+                                val alpha = when (abs(offset)) {
+                                    0 -> 1f
+                                    1 -> 0.8f
+                                    2 -> 0.5f
+                                    3 -> 0.3f
+                                    else -> 0.2f
+                                }
+                                val size = when (abs(offset)) {
+                                    0 -> 36.sp
+                                    1 -> 26.sp
+                                    2 -> 22.sp
+                                    3 -> 20.sp
+                                    else -> 18.sp
+                                }
+                                val weight = when (abs(offset)) {
+                                    0 -> FontWeight.Bold
+                                    1 -> FontWeight.Medium
+                                    else -> FontWeight.Normal
+                                }
+                                val color = if (offset == 0) Color.White else Color.Gray.copy(alpha = alpha)
+
+                                val itemModifier = if (offset == 0)
+                                    Modifier
+                                        .padding(vertical = 8.dp)
+                                        .background(Color(0xFF8B5CF6), RoundedCornerShape(8.dp))
+                                        .fillMaxWidth(0.6f)
+                                        .height(56.dp)
+                                else
+                                    Modifier.padding(vertical = 4.dp)
+
+                                Box(
+                                    modifier = itemModifier,
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "$value",
+                                        fontSize = size,
+                                        fontWeight = weight,
+                                        color = color,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
                     }
-                    
-                    // Next numbers with consistent spacing
-                    Text(
-                        text = "${selectedWeight + 1}",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.Gray.copy(alpha = 0.8f),
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 140.dp)
-                    )
-                    
-                    Text(
-                        text = "${selectedWeight + 2}",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray.copy(alpha = 0.5f),
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
-                    )
-                    
-                    Text(
-                        text = "${selectedWeight + 3}",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray.copy(alpha = 0.3f),
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)
-                    )
-                    
-                    Text(
-                        text = "${selectedWeight + 4}",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color.Gray.copy(alpha = 0.2f),
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp)
-                    )
                 }
-                
-                // Down arrow to decrease weight
+
                 IconButton(
                     onClick = {
                         if (selectedWeight > minWeight) {
-                            selectedWeight -= 1
+                            selectedWeight--
                         }
                     }
                 ) {
@@ -214,10 +177,10 @@ fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
                     )
                 }
             }
-            
+
+
             Spacer(modifier = Modifier.weight(1f))
             
-            // Navigation buttons in the same row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -233,7 +196,6 @@ fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
                     shape = RoundedCornerShape(28.dp)
                 ) { Text(text = "Back", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
                 
-                // Continue button
                 Button(
                     onClick = onContinue,
                     modifier = Modifier.weight(1f).height(56.dp),
@@ -248,11 +210,9 @@ fun WeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
     }
 }
 
-// Preview function for WeightScreen
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun WeightScreenPreview() {
-    // Mock ViewModel and callbacks for preview
     val mockViewModel = object {
         fun updateWeight(weight: Float) {}
         val weight = object {

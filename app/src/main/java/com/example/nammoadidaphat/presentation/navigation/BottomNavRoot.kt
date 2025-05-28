@@ -190,7 +190,6 @@ fun BottomNavRoot(
             }
             
             composable(BottomNavScreen.Profile.route) { 
-                val authViewModel = hiltViewModel<AuthViewModel>()
                 ProfileScreen(
                     navController = mainNavController,
                     viewModel = hiltViewModel()
