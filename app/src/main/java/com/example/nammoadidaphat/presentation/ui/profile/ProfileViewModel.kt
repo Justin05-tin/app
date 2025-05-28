@@ -10,6 +10,7 @@ import com.example.nammoadidaphat.data.repository.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -31,93 +32,34 @@ class ProfileViewModel @Inject constructor(
     val uiState: StateFlow<ProfileUiState> = _uiState
     
     init {
-        loadUserProfile()
-        loadUserPreferences()
+        getCurrentUser()
     }
     
     fun getCurrentUser() {
-        loadUserProfile()
-    }
-    
-    private fun loadUserProfile() {
         viewModelScope.launch {
             try {
-                _uiState.value = _uiState.value.copy(isLoading = true)
+                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+                
                 authRepository.getCurrentUser().collect { user ->
-                    if (user != null) {
-                        _uiState.value = _uiState.value.copy(isLoading = false, user = user, error = null)
-                    } else {
-                        if (_uiState.value.user != null) {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                error = null
-                            )
-                        } else {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                error = "User not found",
-                                user = User()
-                            )
-                        }
-                    }
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        user = user,
+                        error = null
+                    )
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to load user profile")
-                
-                val currentUser = _uiState.value.user ?: User()
-                
+                Timber.e(e, "Error loading user profile")
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Failed to load profile: ${e.message}",
-                    user = currentUser
-                )
-            }
-        }
-    }
-    
-    private fun loadUserPreferences() {
-        viewModelScope.launch {
-            try {
-                userPreferencesRepository.getUserPreferences().collect { preferences ->
-                    _uiState.value = _uiState.value.copy(isDarkTheme = preferences.isDarkTheme)
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to load user preferences")
-            }
-        }
-    }
-    
-    fun toggleDarkTheme() {
-        val newThemeValue = !_uiState.value.isDarkTheme
-        _uiState.value = _uiState.value.copy(isDarkTheme = newThemeValue)
-        
-        viewModelScope.launch {
-            try {
-                userPreferencesRepository.setDarkTheme(newThemeValue)
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to save dark theme preference")
-            }
-        }
-    }
-    
-    fun logout() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isLoading = true)
-                authRepository.signOut()
-                // Result will be handled by the auth state listener
-            } catch (e: Exception) {
-                Timber.e(e, "Error during logout")
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = "Failed to logout: ${e.message}"
+                    error = e.message ?: "Failed to load user profile"
                 )
             }
         }
     }
     
     fun editProfilePicture() {
-        // Implement image picker and upload functionality
+        // This will be implemented in the EditProfileScreen
+        // Here we just log the action
         Timber.d("Edit profile picture clicked")
     }
     
@@ -142,7 +84,17 @@ class ProfileViewModel @Inject constructor(
         Timber.d("Upgrade to Pro clicked")
     }
     
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
+    fun logout() {
+        viewModelScope.launch {
+            try {
+                authRepository.signOut()
+                // Navigation will be handled in the UI
+            } catch (e: Exception) {
+                Timber.e(e, "Error signing out")
+                _uiState.value = _uiState.value.copy(
+                    error = "Failed to sign out: ${e.message}"
+                )
+            }
+        }
     }
 } 

@@ -231,6 +231,27 @@ class AuthRepositoryImpl @Inject constructor(
         Result.failure(e)
     }
     
+    override suspend fun updateUserAvatar(userId: String, avatarUrl: String): Result<Unit> = try {
+        val updates = mapOf(
+            "avatar" to avatarUrl,
+            "updatedAt" to Timestamp.now()
+        )
+        
+        usersCollection.document(userId).update(updates).await()
+        
+        // Update cached user
+        val cachedUser = getUserFromCache()
+        if (cachedUser != null && cachedUser.id == userId) {
+            val updatedUser = cachedUser.copy(avatar = avatarUrl, updatedAt = Timestamp.now())
+            saveUserToCache(updatedUser)
+        }
+        
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Timber.e(e, "Failed to update user avatar")
+        Result.failure(e)
+    }
+    
     override suspend fun getUserById(userId: String): Result<User> = try {
         val user = getUserFromFirestore(userId)
         Result.success(user)

@@ -1,5 +1,6 @@
 package com.example.nammoadidaphat.presentation.ui.profile
 
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -7,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nammoadidaphat.domain.model.User
 import com.example.nammoadidaphat.domain.repository.AuthRepository
+import com.example.nammoadidaphat.domain.repository.CloudinaryRepository
 import com.google.firebase.Timestamp
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,13 +21,16 @@ import javax.inject.Inject
 data class EditProfileUiState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
+    val isUploadingImage: Boolean = false,
+    val uploadProgress: Float = 0f,
     val error: String? = null,
     val user: User? = null
 )
 
 @HiltViewModel
 class EditProfileViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val cloudinaryRepository: CloudinaryRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(EditProfileUiState(isLoading = true))
@@ -133,8 +138,76 @@ class EditProfileViewModel @Inject constructor(
         }
     }
     
-    fun editProfilePicture() {
-        // This would be implemented to handle image selection and upload
-        Timber.d("Edit profile picture clicked")
+    fun uploadProfileImage(imageUri: Uri, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(
+                    isUploadingImage = true,
+                    uploadProgress = 0f,
+                    error = null
+                )
+                
+                val currentUser = _uiState.value.user ?: run {
+                    _uiState.value = _uiState.value.copy(
+                        isUploadingImage = false,
+                        error = "User not found"
+                    )
+                    onComplete(false)
+                    return@launch
+                }
+                
+                // Upload image to Cloudinary
+                Timber.d("Starting image upload to Cloudinary")
+                val uploadResult = cloudinaryRepository.uploadImage(imageUri)
+                
+                if (uploadResult.isSuccess) {
+                    val imageUrl = uploadResult.getOrNull()
+                    if (imageUrl != null) {
+                        // Update user avatar in Firestore
+                        Timber.d("Image uploaded successfully, updating user avatar: $imageUrl")
+                        val updateResult = authRepository.updateUserAvatar(currentUser.id, imageUrl)
+                        
+                        if (updateResult.isSuccess) {
+                            // Update local user state
+                            val updatedUser = currentUser.copy(avatar = imageUrl)
+                            _uiState.value = _uiState.value.copy(
+                                isUploadingImage = false,
+                                uploadProgress = 1f,
+                                user = updatedUser,
+                                error = null
+                            )
+                            onComplete(true)
+                        } else {
+                            val error = updateResult.exceptionOrNull()
+                            _uiState.value = _uiState.value.copy(
+                                isUploadingImage = false,
+                                error = "Failed to update avatar: ${error?.message}"
+                            )
+                            onComplete(false)
+                        }
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isUploadingImage = false,
+                            error = "Failed to get image URL"
+                        )
+                        onComplete(false)
+                    }
+                } else {
+                    val error = uploadResult.exceptionOrNull()
+                    _uiState.value = _uiState.value.copy(
+                        isUploadingImage = false,
+                        error = "Failed to upload image: ${error?.message}"
+                    )
+                    onComplete(false)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to upload profile image")
+                _uiState.value = _uiState.value.copy(
+                    isUploadingImage = false,
+                    error = "Failed to upload image: ${e.message}"
+                )
+                onComplete(false)
+            }
+        }
     }
 } 

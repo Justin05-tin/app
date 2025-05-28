@@ -1,12 +1,20 @@
 package com.example.nammoadidaphat.presentation.navigation
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -14,23 +22,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.NavController
 import com.example.nammoadidaphat.presentation.ui.home.HomeScreen
+import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
+import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
 import com.example.nammoadidaphat.presentation.ui.workout.ExerciseScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelDetailScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutLevelsScreen
 import com.example.nammoadidaphat.presentation.ui.workout.WorkoutSessionScreen
-import com.example.nammoadidaphat.presentation.ui.report.ReportScreen
-import com.example.nammoadidaphat.presentation.ui.profile.ProfileScreen
-import com.example.nammoadidaphat.presentation.ui.profile.ProfileViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
-import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.ExerciseViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.HomeViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.ReportViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelDetailViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutLevelsViewModel
 import com.example.nammoadidaphat.presentation.viewmodel.WorkoutSessionViewModel
-import com.example.nammoadidaphat.presentation.viewmodel.ReportViewModel
-import com.example.nammoadidaphat.presentation.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,12 +190,10 @@ fun BottomNavRoot(
             }
             
             composable(BottomNavScreen.Profile.route) { 
-                val profileViewModel = hiltViewModel<ProfileViewModel>()
-                val themeViewModel = hiltViewModel<ThemeViewModel>()
+                val authViewModel = hiltViewModel<AuthViewModel>()
                 ProfileScreen(
                     navController = mainNavController,
-                    viewModel = profileViewModel,
-                    themeViewModel = themeViewModel
+                    viewModel = hiltViewModel()
                 ) 
             }
         }

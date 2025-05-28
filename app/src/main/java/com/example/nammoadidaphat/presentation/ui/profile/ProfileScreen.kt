@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -24,11 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.nammoadidaphat.R
-import timber.log.Timber
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import androidx.compose.ui.window.Dialog
+import com.example.nammoadidaphat.R
+import timber.log.Timber
 import com.example.nammoadidaphat.domain.model.User
 import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 
@@ -224,7 +224,7 @@ fun ProfileScreen(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF7B50E8))
-                                .clickable { viewModel.editProfilePicture() }
+                                .clickable { viewModel.navigateToEditProfile(navController) }
                                 .padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -439,17 +439,9 @@ fun ProfileScreen(
         
         // Logout confirmation dialog
         if (showLogoutDialog) {
-            Dialog(
-                onDismissRequest = { showLogoutDialog = false }
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { 
                     Text(
                         text = "Logout",
                         color = Color(0xFFE57373),
@@ -457,9 +449,8 @@ fun ProfileScreen(
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
+                },
+                text = {
                     Text(
                         text = "Are you sure you want to log out?",
                         fontSize = 16.sp,
@@ -467,10 +458,8 @@ fun ProfileScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    // Logout button
+                },
+                confirmButton = {
                     Button(
                         onClick = {
                             viewModel.logout()
@@ -495,10 +484,8 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Cancel button
+                },
+                dismissButton = {
                     OutlinedButton(
                         onClick = { showLogoutDialog = false },
                         modifier = Modifier
@@ -516,8 +503,10 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
-                }
-            }
+                },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         }
     }
 }

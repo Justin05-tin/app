@@ -116,6 +116,14 @@ dependencies {
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("io.coil-kt:coil-gif:2.5.0")
+    
+    // Cloudinary SDK
+    implementation("com.cloudinary:cloudinary-android:2.3.1")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    
+    // Activity Result APIs for image picking
+    implementation("androidx.activity:activity-ktx:1.8.2")
+    implementation("androidx.activity:activity-compose:1.8.2")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
