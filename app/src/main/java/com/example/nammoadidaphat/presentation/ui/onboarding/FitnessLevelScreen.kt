@@ -20,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,13 @@ fun FitnessLevelScreen(
     val scrollState = rememberScrollState()
     
     val selectedLevel = remember { mutableStateOf(fitnessLevel.ifEmpty { "beginner" }) }
+    
+    // Đảm bảo giá trị mặc định được cập nhật vào ViewModel nếu trống
+    LaunchedEffect(Unit) {
+        if (fitnessLevel.isEmpty()) {
+            viewModel.updateFitnessLevel(selectedLevel.value)
+        }
+    }
     
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
         Column(
@@ -138,7 +146,10 @@ fun FitnessLevelScreen(
                 // Finish button
                 Button(
                     onClick = {
-                        // First save user data to Firestore
+                        // Lưu giá trị fitness level hiện tại trước khi lưu toàn bộ dữ liệu
+                        viewModel.updateFitnessLevel(selectedLevel.value)
+                        
+                        // Sau đó lưu user data vào Firestore
                         CoroutineScope(Dispatchers.IO).launch {
                             val result = viewModel.saveUserOnboardingData()
                             // Then complete onboarding on main thread

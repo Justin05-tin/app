@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
+import kotlin.math.abs
 
 @Composable
 fun HeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
@@ -47,216 +48,181 @@ fun HeightScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onB
     val scrollState = rememberScrollState()
     var selectedHeight by remember { mutableIntStateOf(height ?: 175) }
 
-    // Set reasonable limits for height
     val minHeight = 140
     val maxHeight = 220
 
-    // Update the height in the viewModel when it changes
     viewModel.updateHeight(selectedHeight)
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
         Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(scrollState),
-                horizontalAlignment = Alignment.Start
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.Start
         ) {
             Text(
-                    text = "What is Your Height?",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                text = "What is Your Height?",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                    text = "Height in cm. Don't worry, you can always change it later.",
-                    fontSize = 14.sp,
-                    color = Color.Gray
+                text = "Height in cm. Don't worry, you can always change it later.",
+                fontSize = 14.sp,
+                color = Color.Gray
             )
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Height selector
             Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Up arrow to increase height
                 IconButton(
-                        onClick = {
-                            if (selectedHeight < maxHeight) {
-                                selectedHeight++
-                            }
+                    onClick = {
+                        if (selectedHeight < maxHeight) {
+                            selectedHeight++
                         }
-                ) {
-                    Icon(
-                            imageVector = Icons.Default.KeyboardArrowUp,
-                            contentDescription = "Increase height",
-                            tint = Color(0xFF8B5CF6),
-                            modifier = Modifier.size(36.dp)
-                    )
-                }
-
-                // Height number vertical selector with drag support
-                Box(
-                        modifier =
-                                Modifier.fillMaxWidth()
-                                        .height(300.dp) // Increased height for better spacing
-                                        .pointerInput(Unit) {
-                                            detectVerticalDragGestures { _, dragAmount ->
-                                                when {
-                                                    dragAmount < 0 && selectedHeight < maxHeight ->
-                                                            selectedHeight++
-                                                    dragAmount > 0 && selectedHeight > minHeight ->
-                                                            selectedHeight--
-                                                }
-                                            }
-                                        },
-                        contentAlignment = Alignment.Center
-                ) {
-                    // Previous numbers with consistent spacing
-                    Text(
-                            text = "${selectedHeight - 4}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.2f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 20.dp)
-                    )
-
-                    Text(
-                            text = "${selectedHeight - 3}",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.3f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp)
-                    )
-
-                    Text(
-                            text = "${selectedHeight - 2}",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.5f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
-                    )
-
-                    Text(
-                            text = "${selectedHeight - 1}",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Gray.copy(alpha = 0.8f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 140.dp)
-                    )
-
-                    // Selected height
-                    Box(
-                            modifier =
-                                    Modifier.fillMaxWidth()
-                                            .padding(horizontal = 80.dp)
-                                            .height(56.dp) // Fixed height for the selected box
-                                            .background(Color(0xFF8B5CF6), RoundedCornerShape(8.dp))
-                                            .align(Alignment.Center),
-                            contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                                text = "$selectedHeight",
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                textAlign = TextAlign.Center
-                        )
                     }
-
-                    // Next numbers with consistent spacing
-                    Text(
-                            text = "${selectedHeight + 1}",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Gray.copy(alpha = 0.8f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 140.dp)
-                    )
-
-                    Text(
-                            text = "${selectedHeight + 2}",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.5f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
-                    )
-
-                    Text(
-                            text = "${selectedHeight + 3}",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.3f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)
-                    )
-
-                    Text(
-                            text = "${selectedHeight + 4}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.2f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Increase height",
+                        tint = Color(0xFF8B5CF6),
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 
-                // Down arrow to decrease height
-                IconButton(
-                        onClick = {
-                            if (selectedHeight > minHeight) {
-                                selectedHeight--
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .pointerInput(Unit) {
+                            detectVerticalDragGestures { _, dragAmount ->
+                                when {
+                                    dragAmount < 0 && selectedHeight < maxHeight -> selectedHeight++
+                                    dragAmount > 0 && selectedHeight > minHeight -> selectedHeight--
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        (-4..4).forEach { offset ->
+                            val value = selectedHeight + offset
+                            if (value in minHeight..maxHeight) {
+                                val alpha = when (abs(offset)) {
+                                    0 -> 1f
+                                    1 -> 0.8f
+                                    2 -> 0.5f
+                                    3 -> 0.3f
+                                    else -> 0.2f
+                                }
+                                val size = when (abs(offset)) {
+                                    0 -> 36.sp
+                                    1 -> 26.sp
+                                    2 -> 22.sp
+                                    3 -> 20.sp
+                                    else -> 18.sp
+                                }
+                                val weight = when (abs(offset)) {
+                                    0 -> FontWeight.Bold
+                                    1 -> FontWeight.Medium
+                                    else -> FontWeight.Normal
+                                }
+                                val color =
+                                    if (offset == 0) Color.White else Color.Gray.copy(alpha = alpha)
+
+                                val itemModifier = if (offset == 0)
+                                    Modifier
+                                        .padding(vertical = 8.dp)
+                                        .background(Color(0xFF8B5CF6), RoundedCornerShape(8.dp))
+                                        .fillMaxWidth(0.6f)
+                                        .height(56.dp)
+                                else
+                                    Modifier.padding(vertical = 4.dp)
+
+                                Box(
+                                    modifier = itemModifier,
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "$value",
+                                        fontSize = size,
+                                        fontWeight = weight,
+                                        color = color,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
+                    }
+                }
+
+                IconButton(
+                    onClick = {
+                        if (selectedHeight > minHeight) {
+                            selectedHeight--
+                        }
+                    }
                 ) {
                     Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Decrease height",
-                            tint = Color(0xFF8B5CF6),
-                            modifier = Modifier.size(36.dp)
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Decrease height",
+                        tint = Color(0xFF8B5CF6),
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
 
+
             Spacer(modifier = Modifier.weight(1f))
 
-            // Navigation buttons in the same row
             Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Back button
                 Button(
-                        onClick = onBack,
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        colors =
-                                ButtonDefaults.buttonColors(
-                                        containerColor = Color.LightGray.copy(alpha = 0.3f),
-                                        contentColor = Color.Black
-                                ),
-                        shape = RoundedCornerShape(28.dp)
+                    onClick = onBack,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = Color.LightGray.copy(alpha = 0.3f),
+                            contentColor = Color.Black
+                        ),
+                    shape = RoundedCornerShape(28.dp)
                 ) { Text(text = "Back", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
 
-                // Continue button
                 Button(
-                        onClick = onContinue,
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        colors =
-                                ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF8B5CF6),
-                                        contentColor = Color.White
-                                ),
-                        shape = RoundedCornerShape(28.dp)
+                    onClick = onContinue,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5CF6),
+                            contentColor = Color.White
+                        ),
+                    shape = RoundedCornerShape(28.dp)
                 ) { Text(text = "Continue", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
             }
         }
     }
 }
 
-// Preview function for HeightScreen
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HeightScreenPreview() {
-    // Mock ViewModel and callbacks for preview
     val mockViewModel = object {
         fun updateHeight(height: Int) {}
         val height = object {
@@ -264,10 +230,10 @@ fun HeightScreenPreview() {
             fun collectAsState() = remember { mutableIntStateOf(175) }
         }
     }
-    
+
     HeightScreen(
-            viewModel = mockViewModel as UserOnboardingViewModel,
-            onContinue = {},
-            onBack = {}
+        viewModel = mockViewModel as UserOnboardingViewModel,
+        onContinue = {},
+        onBack = {}
     )
 }

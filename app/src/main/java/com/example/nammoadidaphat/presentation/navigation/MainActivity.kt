@@ -30,6 +30,7 @@ import com.example.nammoadidaphat.presentation.ui.auth.ForgotPasswordScreen
 import com.example.nammoadidaphat.presentation.ui.auth.LoginScreen
 import com.example.nammoadidaphat.presentation.ui.auth.RegisterScreen
 import com.example.nammoadidaphat.presentation.ui.onboarding.OnboardingScreen
+import com.example.nammoadidaphat.presentation.ui.profile.EditProfileScreen
 import com.example.nammoadidaphat.presentation.ui.splash.SplashScreen
 import com.example.nammoadidaphat.presentation.viewmodel.AuthState
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
@@ -51,6 +52,11 @@ import javax.inject.Inject
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import androidx.navigation.NavController
+import com.example.nammoadidaphat.presentation.ui.profile.ChangePasswordScreen
+import com.example.nammoadidaphat.presentation.ui.profile.GoogleAuthenticatorScreen
+import com.example.nammoadidaphat.presentation.ui.profile.HelpScreen
+import com.example.nammoadidaphat.presentation.ui.profile.NotificationScreen
+import com.example.nammoadidaphat.presentation.ui.profile.SecurityScreen
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 
@@ -189,8 +195,8 @@ class MainActivity : ComponentActivity() {
                         composable("splash") {
                             SplashScreen(
                                 navController = navController,
-                                onboardingViewModel = onboardingViewModel,
-                                authViewModel = composeAuthViewModel
+                                authViewModel = composeAuthViewModel,
+                                onboardingViewModel = onboardingViewModel
                             )
                         }
                         composable("onboarding") {
@@ -203,11 +209,10 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 navController = navController,
                                 viewModel = composeAuthViewModel,
-                                onGoogleSignInClicked = { 
+                                onGoogleSignInClicked = {
                                     startGoogleSignIn()
                                 },
                                 onFacebookSignInClicked = {
-                                    // Initialize Facebook login
                                     authRepository.initiateLoginWithFacebook(this@MainActivity)
                                 }
                             )
@@ -245,6 +250,29 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("forgot_password") {
                             ForgotPasswordScreen(navController = navController)
+                        }
+                        composable("edit_profile") {
+                            EditProfileScreen(navController = navController)
+                        }
+                        
+                        composable("notifications") {
+                            NotificationScreen(navController = navController)
+                        }
+                        
+                        composable("security") {
+                            SecurityScreen(navController = navController)
+                        }
+                        
+                        composable("change_password") {
+                            ChangePasswordScreen(navController = navController)
+                        }
+                        
+                        composable("google_authenticator") {
+                            GoogleAuthenticatorScreen(navController = navController)
+                        }
+                        
+                        composable("help") {
+                            HelpScreen(navController = navController)
                         }
                     }
                 }

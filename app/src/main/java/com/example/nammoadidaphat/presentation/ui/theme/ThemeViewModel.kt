@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nammoadidaphat.data.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -15,30 +15,34 @@ import javax.inject.Inject
 class ThemeViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
-
-    // Stream of dark theme state from UserPreferencesRepository
-    val isDarkTheme: Flow<Boolean> = userPreferencesRepository.getUserPreferences()
-        .map { preferences -> preferences.isDarkTheme }
-
-    // Toggle dark theme
-    fun toggleDarkTheme() {
+    
+    private val _isDarkTheme = MutableStateFlow(false)
+    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme.asStateFlow()
+    
+    init {
+        loadThemePreference()
+    }
+    
+    private fun loadThemePreference() {
         viewModelScope.launch {
             try {
-                val currentPreferences = userPreferencesRepository.getUserPreferences().first()
-                userPreferencesRepository.setDarkTheme(!currentPreferences.isDarkTheme)
+                userPreferencesRepository.getUserPreferences().collect { preferences ->
+                    _isDarkTheme.value = preferences.isDarkTheme
+                }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to toggle dark theme")
+                Timber.e(e, "Failed to load theme preference")
             }
         }
     }
-
-    // Set dark theme
-    fun setDarkTheme(enabled: Boolean) {
+    
+    fun toggleDarkTheme() {
+        _isDarkTheme.value = !_isDarkTheme.value
+        
         viewModelScope.launch {
             try {
-                userPreferencesRepository.setDarkTheme(enabled)
+                userPreferencesRepository.setDarkTheme(_isDarkTheme.value)
             } catch (e: Exception) {
-                Timber.e(e, "Failed to set dark theme to $enabled")
+                Timber.e(e, "Failed to save dark theme preference")
             }
         }
     }

@@ -20,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +40,13 @@ fun GenderScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit) {
     val gender by viewModel.gender.collectAsState()
     val scrollState = rememberScrollState()
     val selectedGender = remember { mutableStateOf(gender.ifEmpty { "male" }) }
+    
+    // Đảm bảo giá trị mặc định được cập nhật vào ViewModel nếu trống
+    LaunchedEffect(Unit) {
+        if (gender.isEmpty()) {
+            viewModel.updateGender(selectedGender.value)
+        }
+    }
     
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
         Column(

@@ -35,7 +35,6 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Background Image - Gym/workout image
         Image(
             painter = painterResource(id = R.drawable.onboarding_background),
             contentDescription = "Workout background",
@@ -43,11 +42,10 @@ fun OnboardingScreen(
             contentScale = ContentScale.Crop
         )
 
-        // Overlay for better text readability
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0x66000000))  // Slightly transparent black overlay
+                .background(Color(0x66000000))
         )
 
         // Content
@@ -84,14 +82,11 @@ fun OnboardingScreen(
                 modifier = Modifier.padding(bottom = 48.dp)
             )
 
-            // Get Started Button
             Button(
                 onClick = {
                     if (!isNavigating) {
                         isNavigating = true
-                        // Lưu trạng thái onboarding đã hoàn thành
                         viewModel.saveOnboardingCompleted()
-                        // Điều hướng đến màn hình đăng nhập
                         navController.navigate("login") {
                             popUpTo("onboarding") { inclusive = true }
                         }
@@ -102,7 +97,7 @@ fun OnboardingScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFEB3B) // Yellow color as in the image
+                    containerColor = Color(0xFF8B5CF6)
                 )
             ) {
                 Text(
@@ -113,7 +108,6 @@ fun OnboardingScreen(
                 )
             }
 
-            // Page indicator
             Row(
                 modifier = Modifier
                     .padding(top = 32.dp, bottom = 24.dp)

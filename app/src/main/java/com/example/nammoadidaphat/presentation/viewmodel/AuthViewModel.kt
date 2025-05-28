@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import timber.log.Timber
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -52,32 +53,28 @@ class AuthViewModel @Inject constructor(
     suspend fun signUp(
         email: String, 
         password: String, 
-        fullName: String,
-        age: Int? = null,
-        gender: String = "",
-        height: Int? = null,
-        weight: Float? = null,
-        fitnessLevel: String = "",
-        goals: String = ""
+        fullName: String = ""
     ): Result<User> {
         _authState.value = AuthState.Loading
+        
+        // Add logging for debug
+        Timber.d("AuthViewModel: Starting signup process with email: $email, fullName: $fullName")
         
         val result = authRepository.signUp(
             email, 
             password, 
-            fullName,
-            age,
-            gender,
-            height,
-            weight,
-            fitnessLevel,
-            goals
+            fullName
         )
+        
+        // Log the result
         result.onSuccess { user ->
+            Timber.d("AuthViewModel: Signup successful. User ID: ${user.id}, Avatar: ${user.avatar}")
             _authState.value = AuthState.Authenticated(user)
         }.onFailure { error ->
+            Timber.e(error, "AuthViewModel: Signup failed: ${error.message}")
             _authState.value = AuthState.Error(error.message ?: "Registration failed")
         }
+        
         return result
     }
     

@@ -7,14 +7,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -24,11 +28,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.nammoadidaphat.R
-import timber.log.Timber
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import androidx.compose.ui.window.Dialog
+import com.example.nammoadidaphat.R
+import timber.log.Timber
 import com.example.nammoadidaphat.domain.model.User
 import com.example.nammoadidaphat.presentation.ui.theme.ThemeViewModel
 
@@ -45,7 +48,7 @@ fun ProfileScreen(
     
     // State for logout dialog
     var showLogoutDialog by remember { mutableStateOf(false) }
-
+    
     // Helper function to check if a resource exists
     fun isResourceAvailable(resId: Int): Boolean {
         return try {
@@ -57,7 +60,13 @@ fun ProfileScreen(
     }
     
     LaunchedEffect(Unit) {
-        viewModel.getCurrentUser()
+        try {
+            // Add small delay to ensure authentication state is fully settled
+            delay(100)
+            viewModel.getCurrentUser()
+        } catch (e: Exception) {
+            Timber.e(e, "Error in ProfileScreen LaunchedEffect: ${e.message}")
+        }
     }
 
     Box(
@@ -109,7 +118,13 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Button(
-                    onClick = { viewModel.getCurrentUser() },
+                    onClick = { 
+                        try {
+                            viewModel.getCurrentUser() 
+                        } catch (e: Exception) {
+                            Timber.e(e, "Error retrying getCurrentUser: ${e.message}")
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -121,7 +136,7 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 TextButton(onClick = {
-                    viewModel.logout()
+                    viewModel.signOut(navController)
                     navController.navigate("login") {
                         popUpTo("main_nav_graph") { inclusive = true }
                     }
@@ -131,7 +146,17 @@ fun ProfileScreen(
             }
         } else {
             // Only show the content when not loading and no errors
-            val user = uiState.user ?: User() // Ensure we have a non-null user object
+            // Create a safe default user object with proper defaults
+            val user = uiState.user ?: User(
+                id = "default",
+                email = "user@example.com",
+                displayName = "User",
+                avatar = "", // Empty string for avatar
+                gender = "Not specified",
+                fitnessLevel = "beginner",
+                goals = listOf("Get fit"),
+                authProvider = "password"
+            )
             
             Column(
                 modifier = Modifier
@@ -194,11 +219,18 @@ fun ProfileScreen(
                 ) {
                     // Profile Picture with Edit Button
                     Box(contentAlignment = Alignment.BottomEnd) {
-                        // Profile Image - safely handle null/empty values
-                        val profileImageUrl = user.avatar
+                        // Profile Image - Cách xử lý an toàn và mạnh mẽ hơn 
+                        val profileImageUrl = user.avatar ?: ""
                         
-                        if (profileImageUrl != null && profileImageUrl.isNotEmpty()) {
-                            // Load image from URL using Coil without try-catch
+                        // Kiểm tra kỹ lưỡng hơn cho URL avatar hợp lệ
+                        val isValidUrl = profileImageUrl.isNotBlank() && 
+                            (profileImageUrl.startsWith("http://") || 
+                             profileImageUrl.startsWith("https://") || 
+                             profileImageUrl.startsWith("content://") || 
+                             profileImageUrl.startsWith("file://"))
+                        
+                        if (isValidUrl) {
+                            // Tải ảnh từ URL sử dụng Coil với xử lý lỗi toàn diện
                             Image(
                                 painter = rememberAsyncImagePainter(
                                     ImageRequest.Builder(LocalContext.current)
@@ -206,6 +238,7 @@ fun ProfileScreen(
                                         .crossfade(true)
                                         .error(R.drawable.profile_placeholder)
                                         .fallback(R.drawable.profile_placeholder)
+                                        .placeholder(R.drawable.profile_placeholder)
                                         .build()
                                 ),
                                 contentDescription = "Profile Picture",
@@ -215,6 +248,7 @@ fun ProfileScreen(
                                     .clip(CircleShape)
                             )
                         } else {
+                            // Luôn hiển thị ảnh mặc định cho URL không hợp lệ/rỗng
                             DefaultProfileImage()
                         }
                         
@@ -224,7 +258,13 @@ fun ProfileScreen(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF7B50E8))
-                                .clickable { viewModel.editProfilePicture() }
+                                .clickable { 
+                                    try {
+                                        viewModel.navigateToEditProfile(navController) 
+                                    } catch (e: Exception) {
+                                        Timber.e(e, "Error navigating to edit profile: ${e.message}")
+                                    }
+                                }
                                 .padding(8.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -240,8 +280,9 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     // User Name - safely handle null value with fallback
+                    val displayName = remember(user) { user.displayName.takeIf { it.isNotBlank() } ?: "User" }
                     Text(
-                        text = user.displayName.takeIf { it.isNotBlank() } ?: "User",
+                        text = displayName,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -250,8 +291,9 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     
                     // User Email - safely handle null value with fallback
+                    val email = remember(user) { user.email.takeIf { it.isNotBlank() } ?: "" }
                     Text(
-                        text = user.email.takeIf { it.isNotBlank() } ?: "",
+                        text = email,
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
@@ -315,7 +357,7 @@ fun ProfileScreen(
                                 
                                 // Chevron icon
                                 Icon(
-                                    imageVector = Icons.Default.ArrowForward,
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = "Go to Premium",
                                     tint = Color.White,
                                     modifier = Modifier.size(24.dp)
@@ -325,113 +367,97 @@ fun ProfileScreen(
                         
                         Spacer(modifier = Modifier.height(24.dp))
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Settings options
+                    SettingsItem(
+                        icon = Icons.Default.Person,
+                        title = "Edit Profile",
+                        onClick = { viewModel.navigateToEditProfile(navController) }
+                    )
+
+                    SettingsItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Notification",
+                        onClick = { viewModel.navigateToNotifications(navController) }
+                    )
+
+                    SettingsItem(
+                        icon = Icons.Default.Lock,
+                        title = "Security",
+                        onClick = { viewModel.navigateToSecurity(navController) }
+                    )
+
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.Filled.Help,
+                        title = "Help",
+                        onClick = { viewModel.navigateToHelp(navController) }
+                    )
                     
-                    // Menu Items
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
+                    // Dark Theme Toggle
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Edit Profile
-                        MenuRow(
-                            icon = Icons.Default.Person,
-                            title = "Edit Profile",
-                            onClick = { viewModel.navigateToEditProfile(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Notifications
-                        MenuRow(
-                            icon = Icons.Default.Notifications,
-                            title = "Notifications",
-                            onClick = { viewModel.navigateToNotifications(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Security
-                        MenuRow(
-                            icon = Icons.Default.Lock,
-                            title = "Security",
-                            onClick = { viewModel.navigateToSecurity(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Help
-                        MenuRow(
-                            icon = Icons.Default.Info,
-                            title = "Help",
-                            onClick = { viewModel.navigateToHelp(navController) }
-                        )
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Dark Theme
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Refresh,
-                                    contentDescription = "Dark Theme",
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                
-                                Spacer(modifier = Modifier.width(16.dp))
-                                
-                                Text(
-                                    text = "Dark Theme",
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                            }
-                            
-                            Switch(
-                                checked = isDarkTheme,
-                                onCheckedChange = { themeViewModel.toggleDarkTheme() },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = Color(0xFF7B50E8),
-                                    checkedIconColor = Color.White,
-                                    uncheckedThumbColor = Color.White,
-                                    uncheckedTrackColor = Color.LightGray,
-                                    uncheckedIconColor = Color.LightGray
-                                )
-                            )
-                        }
-                        
-                        Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
-                        
-                        // Logout
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showLogoutDialog = true }
-                                .padding(vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.ExitToApp,
-                                contentDescription = "Logout",
-                                tint = Color(0xFFE57373), // Red color
+                                imageVector = Icons.Default.DarkMode,
+                                contentDescription = "Dark Theme",
+                                tint = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.size(24.dp)
                             )
                             
                             Spacer(modifier = Modifier.width(16.dp))
                             
                             Text(
-                                text = "Logout",
+                                text = "Dark Theme",
                                 fontSize = 16.sp,
-                                color = Color(0xFFE57373) // Red color
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                         }
+                        
+                        Switch(
+                            checked = isDarkTheme,
+                            onCheckedChange = { themeViewModel.toggleDarkTheme() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.surfaceVariant,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+                    
+                    Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+                    
+                    // Logout Button
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showLogoutDialog = true }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Logout",
+                            tint = Color(0xFFE57373), // Red color
+                            modifier = Modifier.size(24.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Text(
+                            text = "Logout",
+                            fontSize = 16.sp,
+                            color = Color(0xFFE57373) // Red color
+                        )
                     }
                 }
             }
@@ -439,17 +465,9 @@ fun ProfileScreen(
         
         // Logout confirmation dialog
         if (showLogoutDialog) {
-            Dialog(
-                onDismissRequest = { showLogoutDialog = false }
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { 
                     Text(
                         text = "Logout",
                         color = Color(0xFFE57373),
@@ -457,9 +475,8 @@ fun ProfileScreen(
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
+                },
+                text = {
                     Text(
                         text = "Are you sure you want to log out?",
                         fontSize = 16.sp,
@@ -467,13 +484,11 @@ fun ProfileScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    // Logout button
+                },
+                confirmButton = {
                     Button(
                         onClick = {
-                            viewModel.logout()
+                            viewModel.signOut(navController)
                             showLogoutDialog = false
                             // Navigate back to login screen
                             navController.navigate("login") {
@@ -495,10 +510,8 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Cancel button
+                },
+                dismissButton = {
                     OutlinedButton(
                         onClick = { showLogoutDialog = false },
                         modifier = Modifier
@@ -516,8 +529,10 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
-                }
-            }
+                },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         }
     }
 }
@@ -554,45 +569,91 @@ fun MenuRow(
 
 @Composable
 private fun DefaultProfileImage() {
-    // Pre-compute whether the placeholder is available
-    val context = LocalContext.current
-    val isPlaceholderAvailable = remember {
-        try {
-            context.resources.getResourceName(R.drawable.profile_placeholder)
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
+    // Sử dụng cách an toàn hơn không dùng try-catch
+    // Sử dụng một biến cờ để kiểm soát việc hiển thị fallback
+    val useDefaultImage = true
     
-    if (isPlaceholderAvailable) {
+    if (useDefaultImage) {
         Image(
             painter = painterResource(id = R.drawable.profile_placeholder),
-            contentDescription = "Profile Picture",
+            contentDescription = "Default Profile Picture",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
         )
     } else {
+        // Fallback chỉ sử dụng trong trường hợp hiếm gặp
         FallbackProfileBox()
     }
 }
 
 @Composable
 private fun FallbackProfileBox() {
+    // This is now a backup fallback in case the resource is missing for some reason
     Box(
         modifier = Modifier
             .size(120.dp)
             .clip(CircleShape)
-            .background(Color.LightGray),
+            .background(
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF7B50E8),
+                        Color(0xFF9C6AFF)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Default.Person,
-            contentDescription = "Profile",
+            contentDescription = "Default Profile",
             tint = Color.White,
             modifier = Modifier.size(60.dp)
         )
     }
+}
+
+@Composable
+fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(24.dp)
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = "Navigate",
+            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+            modifier = Modifier.size(24.dp)
+        )
+    }
+    
+    Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
 } 

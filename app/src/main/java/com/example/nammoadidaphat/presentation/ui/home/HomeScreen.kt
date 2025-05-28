@@ -28,19 +28,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.nammoadidaphat.R
-import com.example.nammoadidaphat.domain.model.User
+import com.example.nammoadidaphat.domain.model.WorkoutType
 import com.example.nammoadidaphat.presentation.viewmodel.AuthViewModel
+import com.example.nammoadidaphat.presentation.viewmodel.HomeViewModel
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 @Composable
 fun HomeScreen(
     navController: NavController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val scope = rememberCoroutineScope()
     val currentUser = authViewModel.currentUser.collectAsState().value
+    
+    // Loading and error states
+    val isLoading by homeViewModel.isLoading.collectAsState()
+    val error by homeViewModel.error.collectAsState()
     
     // State for selected featured workout tab
     var selectedFeaturedTab by remember { mutableStateOf("Beginner") }
@@ -50,47 +59,15 @@ fun HomeScreen(
     var selectedWorkoutLevel by remember { mutableStateOf("Beginner") }
     val workoutLevels = listOf("Beginner", "Intermediate", "Advanced")
     
-    // Featured workouts based on selected tab
-    val featuredWorkouts = when (selectedFeaturedTab) {
-        "Intermediate" -> listOf(
-            FeaturedWorkout("Full Body Stretching", "10 minutes", "Intermediate", R.drawable.ic_fitness),
-            FeaturedWorkout("Yoga Poses", "15 minutes", "Intermediate", R.drawable.ic_fitness)
-        )
-        "Advanced" -> listOf(
-            FeaturedWorkout("HIIT Workout", "20 minutes", "Advanced", R.drawable.ic_fitness),
-            FeaturedWorkout("CrossFit Challenge", "25 minutes", "Advanced", R.drawable.ic_fitness)
-        )
-        else -> listOf(
-            FeaturedWorkout("Easy Stretching", "8 minutes", "Beginner", R.drawable.ic_fitness),
-            FeaturedWorkout("Body Weight Exercise", "12 minutes", "Beginner", R.drawable.ic_fitness)
-        )
-    }
+    // Observe featured workouts based on selected tab
+    val featuredWorkouts = homeViewModel.getFeaturedWorkoutsByLevel(selectedFeaturedTab)
     
-    // Workout exercises for selected level
-    val workoutExercises = when (selectedWorkoutLevel) {
-        "Intermediate" -> listOf(
-            WorkoutExercise("Squat Movement Exercise", "12 minutes", "Intermediate", R.drawable.ic_leg),
-            WorkoutExercise("Push-up Challenge", "10 minutes", "Intermediate", R.drawable.ic_chest),
-            WorkoutExercise("Core Strength", "15 minutes", "Intermediate", R.drawable.ic_abs),
-            WorkoutExercise("Full Body Stretching", "6 minutes", "Intermediate", R.drawable.ic_fitness),
-            WorkoutExercise("Yoga Women Exercise", "8 minutes", "Intermediate", R.drawable.ic_yoga),
-            WorkoutExercise("Yoga Movement Exercise", "10 minutes", "Intermediate", R.drawable.ic_yoga),
-            WorkoutExercise("Abdominal Exercise", "6 minutes", "Intermediate", R.drawable.ic_abs)
-        )
-        "Advanced" -> listOf(
-            WorkoutExercise("Advanced Squats", "15 minutes", "Advanced", R.drawable.ic_leg),
-            WorkoutExercise("Power Push-ups", "12 minutes", "Advanced", R.drawable.ic_chest),
-            WorkoutExercise("Abs Crusher", "18 minutes", "Advanced", R.drawable.ic_abs),
-            WorkoutExercise("Advanced Yoga", "10 minutes", "Advanced", R.drawable.ic_yoga),
-            WorkoutExercise("Intense HIIT", "25 minutes", "Advanced", R.drawable.ic_fitness)
-        )
-        else -> listOf(
-            WorkoutExercise("Basic Squats", "10 minutes", "Beginner", R.drawable.ic_leg),
-            WorkoutExercise("Knee Push-ups", "8 minutes", "Beginner", R.drawable.ic_chest),
-            WorkoutExercise("Simple Abs", "10 minutes", "Beginner", R.drawable.ic_abs),
-            WorkoutExercise("Beginner Yoga", "8 minutes", "Beginner", R.drawable.ic_yoga),
-            WorkoutExercise("Light Cardio", "15 minutes", "Beginner", R.drawable.ic_fitness)
-        )
+    // Observe workout exercises for selected level
+    val workoutExercises = homeViewModel.getWorkoutsByLevel(selectedWorkoutLevel)
+    
+    // Add a refresh effect when the view model is initialized
+    LaunchedEffect(Unit) {
+        homeViewModel.loadWorkouts()
     }
     
     Box(
@@ -98,6 +75,25 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // Show loading state
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        // Show error message if any
+        error?.let { errorMessage ->
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(16.dp)
+            )
+        }
+        
         // Single scrollable LazyColumn for the entire screen
         LazyColumn(
             modifier = Modifier
@@ -242,13 +238,33 @@ fun HomeScreen(
             
             // Featured workout horizontal list
             item {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(end = 8.dp),
-                    modifier = Modifier.height(200.dp)
-                ) {
-                    items(featuredWorkouts) { workout ->
-                        FeaturedWorkoutCard(workout)
+                if (featuredWorkouts.isEmpty() && !isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No featured workouts found for $selectedFeaturedTab level",
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                    }
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(end = 8.dp),
+                        modifier = Modifier.height(200.dp)
+                    ) {
+                        items(featuredWorkouts) { workout ->
+                            FeaturedWorkoutCard(
+                                workout = workout,
+                                onClick = {
+                                    // Navigate to workout details
+                                    navController.navigate("workout_levels/${workout.id}")
+                                }
+                            )
+                        }
                     }
                 }
                 
@@ -297,26 +313,45 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
             
-            // Workout exercises list
-            items(workoutExercises) { exercise ->
-                ExerciseCard(
-                    title = exercise.title,
-                    time = exercise.time,
-                    level = exercise.level,
-                    imageRes = exercise.imageRes
-                )
+            // Workout exercises list - only show when not loading
+            if (!isLoading) {
+                if (workoutExercises.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No workouts found for $selectedWorkoutLevel level",
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                } else {
+                    items(workoutExercises) { exercise ->
+                        ExerciseCard(
+                            workout = exercise,
+                            onClick = {
+                                // Navigate to workout details
+                                navController.navigate("workout_levels/${exercise.id}")
+                            }
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun FeaturedWorkoutCard(workout: FeaturedWorkout) {
+fun FeaturedWorkoutCard(workout: WorkoutType, onClick: () -> Unit) {
     Card(
         modifier = Modifier
-            .width(240.dp)  // Made smaller to prevent text wrapping
+            .width(240.dp)
             .height(180.dp)
-            .clickable { /* Handle workout click */ },
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -326,13 +361,23 @@ fun FeaturedWorkoutCard(workout: FeaturedWorkout) {
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background image
-            Image(
-                painter = painterResource(id = workout.imageRes),
-                contentDescription = workout.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Background image - using Coil for network images
+            if (workout.imageUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = workout.imageUrl,
+                    contentDescription = workout.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Fallback to a placeholder
+                Image(
+                    painter = painterResource(id = R.drawable.ic_fitness),
+                    contentDescription = workout.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             
             // Gradient overlay for better text visibility
             Box(
@@ -354,11 +399,11 @@ fun FeaturedWorkoutCard(workout: FeaturedWorkout) {
                     .padding(16.dp)
             ) {
                 Text(
-                    text = workout.title,
-                    fontSize = 18.sp,  // Smaller font size
+                    text = workout.name,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    maxLines = 1  // Prevent text wrapping
+                    maxLines = 1
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -367,14 +412,14 @@ fun FeaturedWorkoutCard(workout: FeaturedWorkout) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${workout.time}  |  ",
-                        fontSize = 14.sp,  // Smaller font size
+                        text = "${workout.duration ?: "10 min"}  |  ",
+                        fontSize = 14.sp,
                         color = Color.White
                     )
                     
                     Text(
-                        text = workout.level,
-                        fontSize = 14.sp,  // Smaller font size
+                        text = workout.difficulty ?: "Beginner",
+                        fontSize = 14.sp,
                         color = Color.White
                     )
                 }
@@ -385,13 +430,13 @@ fun FeaturedWorkoutCard(workout: FeaturedWorkout) {
                 onClick = { /* Handle favorite */ },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(8.dp)  // Smaller padding
+                    .padding(8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = "Favorite",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)  // Smaller icon
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -402,7 +447,7 @@ fun FeaturedWorkoutCard(workout: FeaturedWorkout) {
 fun WorkoutLevelButton(level: String, isSelected: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.height(48.dp),  // Smaller height
+        modifier = Modifier.height(48.dp),
         shape = RoundedCornerShape(24.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isSelected) Color(0xFF7B50E8) else Color.White,
@@ -414,19 +459,19 @@ fun WorkoutLevelButton(level: String, isSelected: Boolean, onClick: () -> Unit) 
     ) {
         Text(
             text = level,
-            fontSize = 14.sp,  // Smaller font size
+            fontSize = 14.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
     }
 }
 
 @Composable
-fun ExerciseCard(title: String, time: String, level: String, imageRes: Int) {
+fun ExerciseCard(workout: WorkoutType, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)  // Smaller height
-            .clickable { /* Handle exercise click */ },
+            .height(160.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -436,13 +481,31 @@ fun ExerciseCard(title: String, time: String, level: String, imageRes: Int) {
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background image
-            Image(
-                painter = painterResource(id = imageRes),
-                contentDescription = title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
+            // Background image - using Coil for network images
+            if (workout.imageUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = workout.imageUrl,
+                    contentDescription = workout.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Fallback to a placeholder based on the name
+                val imageRes = when {
+                    workout.name.contains("leg", ignoreCase = true) -> R.drawable.ic_leg
+                    workout.name.contains("chest", ignoreCase = true) -> R.drawable.ic_chest
+                    workout.name.contains("abs", ignoreCase = true) -> R.drawable.ic_abs
+                    workout.name.contains("yoga", ignoreCase = true) -> R.drawable.ic_yoga
+                    else -> R.drawable.ic_fitness
+                }
+                
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = workout.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             
             // Gradient overlay
             Box(
@@ -464,11 +527,11 @@ fun ExerciseCard(title: String, time: String, level: String, imageRes: Int) {
                     .padding(16.dp)
             ) {
                 Text(
-                    text = title,
-                    fontSize = 18.sp,  // Smaller font size
+                    text = workout.name,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    maxLines = 1  // Prevent text wrapping
+                    maxLines = 1
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -477,14 +540,14 @@ fun ExerciseCard(title: String, time: String, level: String, imageRes: Int) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "$time  |  ",
-                        fontSize = 14.sp,  // Smaller font size
+                        text = "${workout.duration ?: "10 min"}  |  ",
+                        fontSize = 14.sp,
                         color = Color.White
                     )
                     
                     Text(
-                        text = level,
-                        fontSize = 14.sp,  // Smaller font size
+                        text = workout.difficulty ?: "Beginner",
+                        fontSize = 14.sp,
                         color = Color.White
                     )
                 }
@@ -495,29 +558,15 @@ fun ExerciseCard(title: String, time: String, level: String, imageRes: Int) {
                 onClick = { /* Handle favorite */ },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(8.dp)  // Smaller padding
+                    .padding(8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
                     contentDescription = "Favorite",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)  // Smaller icon
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
     }
 }
-
-data class FeaturedWorkout(
-    val title: String,
-    val time: String,
-    val level: String,
-    val imageRes: Int
-)
-
-data class WorkoutExercise(
-    val title: String,
-    val time: String,
-    val level: String,
-    val imageRes: Int
-)

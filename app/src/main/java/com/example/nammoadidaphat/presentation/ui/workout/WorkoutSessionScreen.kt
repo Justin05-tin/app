@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -59,6 +60,15 @@ fun WorkoutSessionScreen(
     val totalExercises by viewModel.totalExercises.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     
+    // Listen for navigation events
+    LaunchedEffect(Unit) {
+        viewModel.navigateBack.collect { shouldNavigate ->
+            if (shouldNavigate) {
+                navController.popBackStack()
+            }
+        }
+    }
+    
     // Progress animation
     val progressPercentage = if (workoutState == WorkoutState.READY) {
         (timeRemaining.toFloat() / 12f).coerceIn(0f, 1f)
@@ -105,7 +115,7 @@ fun WorkoutSessionScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 24.dp),
+                        .padding(top = 8.dp, bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -124,20 +134,32 @@ fun WorkoutSessionScreen(
                         )
                     }
                     
+                    // Exercise name in center
+                    val currentExercise = exercises.getOrNull(currentExerciseIndex)
+                    currentExercise?.let {
+                        Text(
+                            text = it.name,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    
                     // Exercise progress
                     Text(
                         text = "${currentExerciseIndex + 1}/$totalExercises",
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 }
                 
-                // Main circular progress indicator
+                // Main circular progress indicator - smaller size
                 Box(
                     modifier = Modifier
-                        .size(280.dp)
-                        .padding(16.dp),
+                        .size(200.dp)
+                        .padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     // Outer circle - background
@@ -172,7 +194,7 @@ fun WorkoutSessionScreen(
                                 WorkoutState.EXERCISE -> "TẬP LUYỆN"
                                 WorkoutState.REST -> "NGHỈ NGƠI"
                             },
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                         )
@@ -189,14 +211,14 @@ fun WorkoutSessionScreen(
                         if (workoutState == WorkoutState.EXERCISE) {
                             Text(
                                 text = "Bài #${currentExerciseIndex + 1}",
-                                fontSize = 16.sp,
+                                fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                             )
                         }
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 
                 // Exercise info section
                 val currentExercise = exercises.getOrNull(currentExerciseIndex)
@@ -226,15 +248,33 @@ fun WorkoutSessionScreen(
                         )
                     }
                     
-                    // Skip button
+                    // Skip or Check button
                     FloatingActionButton(
-                        onClick = { viewModel.skipToNext() },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        onClick = { 
+                            if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE) {
+                                viewModel.completeWorkout()
+                            } else {
+                                viewModel.skipToNext()
+                            }
+                        },
+                        containerColor = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE)
+                            Color(0xFF4CAF50) // Green for Check button
+                        else 
+                            MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE)
+                            Color.White
+                        else
+                            MaterialTheme.colorScheme.onSecondaryContainer
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
-                            contentDescription = "Skip"
+                            imageVector = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE) 
+                                        Icons.Default.Check
+                                    else 
+                                        Icons.Default.ArrowForward,
+                            contentDescription = if (currentExerciseIndex == totalExercises - 1 && workoutState == WorkoutState.EXERCISE) 
+                                              "Complete" 
+                                          else 
+                                              "Skip"
                         )
                     }
                 }
@@ -255,7 +295,7 @@ fun ExerciseInfoSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            containerColor = Color.Transparent
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -265,25 +305,14 @@ fun ExerciseInfoSection(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Exercise name
-            Text(
-                text = exercise.name,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
             // Only show exercise image during exercise or rest
             if (workoutState != WorkoutState.READY) {
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Exercise image/gif
+                // Exercise image/gif - Increased size to be approximately half the screen
                 Box(
                     modifier = Modifier
-                        .size(160.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .fillMaxWidth()
+                        .height(300.dp),
+                    contentAlignment = Alignment.Center
                 ) {
                     if (exercise.image.isNotBlank()) {
                         // Check if image URL ends with .gif
@@ -293,9 +322,10 @@ fun ExerciseInfoSection(
                                 model = ImageRequest.Builder(context)
                                     .data(exercise.image)
                                     .decoderFactory(GifDecoder.Factory())
+                                    .crossfade(true)
                                     .build(),
                                 contentDescription = exercise.name,
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize(),
                                 loading = {
                                     CircularProgressIndicator(
@@ -307,9 +337,14 @@ fun ExerciseInfoSection(
                         } else {
                             // Regular image
                             Image(
-                                painter = rememberAsyncImagePainter(model = exercise.image),
+                                painter = rememberAsyncImagePainter(
+                                    ImageRequest.Builder(context)
+                                        .data(exercise.image)
+                                        .crossfade(true)
+                                        .build()
+                                ),
                                 contentDescription = exercise.name,
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -318,7 +353,7 @@ fun ExerciseInfoSection(
                         Image(
                             painter = rememberAsyncImagePainter(model = R.drawable.ic_fitness),
                             contentDescription = exercise.name,
-                            contentScale = ContentScale.Crop,
+                            contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -326,70 +361,68 @@ fun ExerciseInfoSection(
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Exercise metrics
-                Row(
+                // Exercise metrics - Enhanced card design
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    // Duration or Reps
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = if (exercise.duration > 0) "Thời gian" else "Số lần",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        // Duration or Reps
+                        MetricItem(
+                            title = if (exercise.duration > 0) "Thời gian" else "Số lần",
+                            value = if (exercise.duration > 0) "${exercise.duration}s" else "x${exercise.reps}"
                         )
                         
-                        Text(
-                            text = if (exercise.duration > 0) "${exercise.duration}s" else "x${exercise.reps}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    
-                    // Rest time
-                    if (exercise.restTime > 0) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Nghỉ",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                            
-                            Text(
-                                text = "${exercise.restTime}s",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        // Rest time
+                        if (exercise.restTime > 0) {
+                            MetricItem(
+                                title = "Nghỉ",
+                                value = "${exercise.restTime}s"
                             )
                         }
-                    }
-                    
-                    // Calories
-                    if (exercise.caloriesBurn > 0) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "Calories",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                            
-                            Text(
-                                text = "${exercise.caloriesBurn}",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        
+                        // Calories
+                        if (exercise.caloriesBurn > 0) {
+                            MetricItem(
+                                title = "Calories",
+                                value = "${exercise.caloriesBurn}"
                             )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MetricItem(title: String, value: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 8.dp)
+    ) {
+        Text(
+            text = title,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = value,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 } 

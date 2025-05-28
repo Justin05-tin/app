@@ -3,14 +3,20 @@ package com.example.nammoadidaphat.di
 import android.content.Context
 import com.example.nammoadidaphat.data.repository.AuthRepositoryImpl
 import com.example.nammoadidaphat.data.repository.CategoryRepositoryImpl
+import com.example.nammoadidaphat.data.repository.CloudinaryRepositoryImpl
 import com.example.nammoadidaphat.data.repository.ExerciseRepositoryImpl
 import com.example.nammoadidaphat.data.repository.LevelRepositoryImpl
 import com.example.nammoadidaphat.data.repository.UserPreferencesRepository
+import com.example.nammoadidaphat.data.repository.UserProgressRepositoryImpl
+import com.example.nammoadidaphat.data.repository.WorkoutSessionRepositoryImpl
 import com.example.nammoadidaphat.data.repository.WorkoutTypeRepositoryImpl
 import com.example.nammoadidaphat.domain.repository.AuthRepository
 import com.example.nammoadidaphat.domain.repository.CategoryRepository
+import com.example.nammoadidaphat.domain.repository.CloudinaryRepository
 import com.example.nammoadidaphat.domain.repository.ExerciseRepository
 import com.example.nammoadidaphat.domain.repository.LevelRepository
+import com.example.nammoadidaphat.domain.repository.UserProgressRepository
+import com.example.nammoadidaphat.domain.repository.WorkoutSessionRepository
 import com.example.nammoadidaphat.domain.repository.WorkoutTypeRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -55,6 +61,24 @@ abstract class AppModule {
     abstract fun bindExerciseRepository(
         exerciseRepositoryImpl: ExerciseRepositoryImpl
     ): ExerciseRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindWorkoutSessionRepository(
+        workoutSessionRepositoryImpl: WorkoutSessionRepositoryImpl
+    ): WorkoutSessionRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindUserProgressRepository(
+        userProgressRepositoryImpl: UserProgressRepositoryImpl
+    ): UserProgressRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindCloudinaryRepository(
+        cloudinaryRepositoryImpl: CloudinaryRepositoryImpl
+    ): CloudinaryRepository
 
     companion object {
         @Provides
@@ -75,6 +99,12 @@ abstract class AppModule {
             @ApplicationContext context: Context
         ): UserPreferencesRepository {
             return UserPreferencesRepository(context)
+        }
+        
+        @Provides
+        @Singleton
+        fun provideContext(@ApplicationContext context: Context): Context {
+            return context
         }
     }
 } 

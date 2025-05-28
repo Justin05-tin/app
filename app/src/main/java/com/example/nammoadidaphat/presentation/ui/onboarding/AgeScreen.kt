@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.nammoadidaphat.presentation.viewmodel.UserOnboardingViewModel
+import kotlin.math.abs
 
 @Composable
 fun AgeScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack: () -> Unit) {
@@ -47,11 +48,9 @@ fun AgeScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack
     val scrollState = rememberScrollState()
     var selectedAge by remember { mutableIntStateOf(age ?: 30) }
 
-    // Set reasonable limits for age
     val minAge = 18
     val maxAge = 80
 
-    // Update the age in the viewModel when it changes
     viewModel.updateAge(selectedAge)
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
@@ -77,155 +76,117 @@ fun AgeScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Age selector
             Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Up arrow to increase age
                 IconButton(
-                        onClick = {
-                            if (selectedAge < maxAge) {
-                                selectedAge++
-                            }
+                    onClick = {
+                        if (selectedAge < maxAge) {
+                            selectedAge++
                         }
-                ) {
-                    Icon(
-                            imageVector = Icons.Default.KeyboardArrowUp,
-                            contentDescription = "Increase age",
-                            tint = Color(0xFF8B5CF6),
-                            modifier = Modifier.size(36.dp)
-                    )
-                }
-
-                // Age number vertical selector with drag support
-                Box(
-                        modifier =
-                                Modifier.fillMaxWidth()
-                                        .height(300.dp) // Increased height for better spacing
-                                        .pointerInput(Unit) {
-                                            detectVerticalDragGestures { _, dragAmount ->
-                                                when {
-                                                    dragAmount < 0 && selectedAge < maxAge ->
-                                                            selectedAge++
-                                                    dragAmount > 0 && selectedAge > minAge ->
-                                                            selectedAge--
-                                                }
-                                            }
-                                        },
-                        contentAlignment = Alignment.Center
-                ) {
-                    // Previous numbers with consistent spacing
-                    Text(
-                            text = "${selectedAge - 4}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.2f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 20.dp)
-                    )
-
-                    Text(
-                            text = "${selectedAge - 3}",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.3f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp)
-                    )
-
-                    Text(
-                            text = "${selectedAge - 2}",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.5f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 100.dp)
-                    )
-
-                    Text(
-                            text = "${selectedAge - 1}",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Gray.copy(alpha = 0.8f),
-                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 140.dp)
-                    )
-
-                    // Selected age
-                    Box(
-                            modifier =
-                                    Modifier.fillMaxWidth()
-                                            .padding(horizontal = 80.dp)
-                                            .height(56.dp) // Fixed height for the selected box
-                                            .background(Color(0xFF8B5CF6), RoundedCornerShape(8.dp))
-                                            .align(Alignment.Center),
-                            contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                                text = "$selectedAge",
-                                fontSize = 36.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                textAlign = TextAlign.Center
-                        )
                     }
-
-                    // Next numbers with consistent spacing
-                    Text(
-                            text = "${selectedAge + 1}",
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Gray.copy(alpha = 0.8f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 140.dp)
-                    )
-
-                    Text(
-                            text = "${selectedAge + 2}",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.5f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
-                    )
-
-                    Text(
-                            text = "${selectedAge + 3}",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.3f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 60.dp)
-                    )
-
-                    Text(
-                            text = "${selectedAge + 4}",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = Color.Gray.copy(alpha = 0.2f),
-                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Increase age",
+                        tint = Color(0xFF8B5CF6),
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 
-                // Down arrow to decrease age
-                IconButton(
-                        onClick = {
-                            if (selectedAge > minAge) {
-                                selectedAge--
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .pointerInput(Unit) {
+                            detectVerticalDragGestures { _, dragAmount ->
+                                when {
+                                    dragAmount < 0 && selectedAge < maxAge -> selectedAge++
+                                    dragAmount > 0 && selectedAge > minAge -> selectedAge--
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        (-4..4).forEach { offset ->
+                            val value = selectedAge + offset
+                            if (value in minAge..maxAge) {
+                                val alpha = when (abs(offset)) {
+                                    0 -> 1f
+                                    1 -> 0.8f
+                                    2 -> 0.5f
+                                    3 -> 0.3f
+                                    else -> 0.2f
+                                }
+                                val size = when (abs(offset)) {
+                                    0 -> 36.sp
+                                    1 -> 26.sp
+                                    2 -> 22.sp
+                                    3 -> 20.sp
+                                    else -> 18.sp
+                                }
+                                val weight = when (abs(offset)) {
+                                    0 -> FontWeight.Bold
+                                    1 -> FontWeight.Medium
+                                    else -> FontWeight.Normal
+                                }
+                                val color = if (offset == 0) Color.White else Color.Gray.copy(alpha = alpha)
+
+                                val itemModifier = if (offset == 0)
+                                    Modifier
+                                        .padding(vertical = 8.dp)
+                                        .background(Color(0xFF8B5CF6), RoundedCornerShape(8.dp))
+                                        .fillMaxWidth(0.6f)
+                                        .height(56.dp)
+                                else
+                                    Modifier.padding(vertical = 4.dp)
+
+                                Box(
+                                    modifier = itemModifier,
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "$value",
+                                        fontSize = size,
+                                        fontWeight = weight,
+                                        color = color,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
                         }
+                    }
+                }
+
+                // Nút giảm tuổi
+                IconButton(
+                    onClick = {
+                        if (selectedAge > minAge) {
+                            selectedAge--
+                        }
+                    }
                 ) {
                     Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Decrease age",
-                            tint = Color(0xFF8B5CF6),
-                            modifier = Modifier.size(36.dp)
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Decrease age",
+                        tint = Color(0xFF8B5CF6),
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
 
+
             Spacer(modifier = Modifier.weight(1f))
 
-            // Navigation buttons in the same row
             Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Back button
                 Button(
                         onClick = onBack,
                         modifier = Modifier.weight(1f).height(56.dp),
@@ -237,7 +198,6 @@ fun AgeScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack
                         shape = RoundedCornerShape(28.dp)
                 ) { Text(text = "Back", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
 
-                // Continue button
                 Button(
                         onClick = onContinue,
                         modifier = Modifier.weight(1f).height(56.dp),
@@ -253,11 +213,9 @@ fun AgeScreen(viewModel: UserOnboardingViewModel, onContinue: () -> Unit, onBack
     }
 }
 
-// Preview function for AgeScreen
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AgeScreenPreview() {
-    // Mock ViewModel and callbacks for preview
     val mockViewModel = object {
         fun updateAge(age: Int) {}
         val age = object {
